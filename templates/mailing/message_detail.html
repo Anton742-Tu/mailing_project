@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ message.subject }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">{{ message.subject }}</h4>
+                <span class="badge {% if message.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                    {% if message.is_active %}Активно{% else %}Неактивно{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6>Текст сообщения:</h6>
+                    <div class="border p-3 bg-light rounded">
+                        {{ message.body|linebreaks }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Создано:</strong> {{ message.created_at|date:"d.m.Y H:i" }}
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Обновлено:</strong> {{ message.updated_at|date:"d.m.Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'mailing:message_list' %}" class="btn btn-secondary">← Назад к списку</a>
+                    <div>
+                        <a href="{% url 'mailing:message_edit' message.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                        <a href="{% url 'mailing:message_delete' message.pk %}" class="btn btn-outline-danger">🗑️ Удалить</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
