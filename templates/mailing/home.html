@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная - Система рассылок{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">📧 Добро пожаловать!</h1>
+    <p class="lead">Система управления email рассылками</p>
+    <hr class="my-4">
+    <p>Для начала работы перейдите в раздел управления клиентами.</p>
+    <a class="btn btn-primary btn-lg" href="/clients/">Перейти к клиентам</a>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <a class="nav-link" href="/clients/">👥 Клиенты</a>
+                <p class="card-text">Управление списком получателей рассылок</p>
+                <a href="/clients/" class="btn btn-outline-primary">Перейти</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">📨 Рассылки</h5>
+                <p class="card-text">Создание и управление рассылками</p>
+                <a href="#" class="btn btn-outline-secondary">Скоро</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">📊 Статистика</h5>
+                <p class="card-text">Отслеживание результатов рассылок</p>
+                <a href="#" class="btn btn-outline-secondary">Скоро</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
