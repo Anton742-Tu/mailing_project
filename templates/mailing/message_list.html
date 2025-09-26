@@ -1,60 +1,38 @@
 {% extends 'base.html' %}
 
-{% block title %}Управление сообщениями{% endblock %}
+{% block title %}Сообщения - Система рассылок{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>📨 Сообщения</h1>
-    <a href="{% url 'mailing:message_create' %}" class="btn btn-primary">
-        📝 Создать сообщение
+    <h1><i class="bi bi-envelope"></i> Сообщения</h1>
+    <a href="{% url 'message_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Создать сообщение
     </a>
-</div>
-
-<!-- Фильтры и поиск -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-6">
-                <input type="text" name="search" class="form-control" 
-                       placeholder="Поиск по теме или содержанию..." value="{{ search_query }}">
-            </div>
-            <div class="col-md-3">
-                <select name="is_active" class="form-select">
-                    <option value="">Все сообщения</option>
-                    <option value="true" {% if is_active_filter == 'true' %}selected{% endif %}>Активные</option>
-                    <option value="false" {% if is_active_filter == 'false' %}selected{% endif %}>Неактивные</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-outline-primary w-100">Применить</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <!-- Статистика -->
 <div class="row mb-4">
     <div class="col-md-4">
-        <div class="card text-white bg-info">
+        <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title">Всего сообщений</h5>
-                <p class="card-text display-6">{{ total_count }}</p>
+                <h5 class="card-title">{{ total_count }}</h5>
+                <p class="card-text">Всего сообщений</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-success">
+        <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title">Активных</h5>
-                <p class="card-text display-6">{{ active_count }}</p>
+                <h5 class="card-title text-success">{{ active_count }}</h5>
+                <p class="card-text">Активных</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-white bg-warning">
+        <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title">Неактивных</h5>
-                <p class="card-text display-6">{{ total_count }}</p>
+                <h5 class="card-title text-secondary">{{ inactive_count|default:0 }}</h5>
+                <p class="card-text">Неактивных</p>
             </div>
         </div>
     </div>
@@ -64,70 +42,81 @@
 <div class="card">
     <div class="card-body">
         {% if page_obj %}
-            <div class="row">
-                {% for message in page_obj %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">{{ message.subject }}</h6>
-                            <span class="badge {% if message.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                {% if message.is_active %}Активно{% else %}Неактивно{% endif %}
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ message.get_short_body }}</p>
-                            <small class="text-muted">Создано: {{ message.created_at|date:"d.m.Y H:i" }}</small>
-                        </div>
-                        <div class="card-footer">
-                            <div class="btn-group btn-group-sm w-100">
-                                <a href="{% url 'mailing:message_detail' message.pk %}" 
-                                   class="btn btn-outline-info">👁️ Просмотр</a>
-                                <a href="{% url 'mailing:message_edit' message.pk %}" 
-                                   class="btn btn-outline-primary">✏️ Редактировать</a>
-                                <a href="{% url 'mailing:message_delete' message.pk %}" 
-                                   class="btn btn-outline-danger">🗑️ Удалить</a>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Тема</th>
+                        <th>Статус</th>
+                        <th>Создано</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for message in page_obj %}
+                    <tr>
+                        <td>
+                            <strong>{{ message.subject }}</strong>
+                            <br>
+                            <small class="text-muted">{{ message.body|truncatechars:100 }}</small>
+                        </td>
+                        <td>
+                            {% if message.is_active %}
+                            <span class="badge bg-success">Активно</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Неактивно</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ message.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'message_detail' message.pk %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'message_edit' message.pk %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'message_delete' message.pk %}" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
                 {% endfor %}
-            </div>
 
-            <!-- Пагинация -->
-            {% if page_obj.has_other_pages %}
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">Первая</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">Назад</a>
-                    </li>
-                    {% endif %}
-
-                    <li class="page-item active">
-                        <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
-                    </li>
-
-                    {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">Вперед</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">Последняя</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
 
         {% else %}
-            <div class="text-center py-5">
-                <h4>Сообщения не найдены</h4>
-                <p class="text-muted">Создайте первое сообщение для рассылки.</p>
-                <a href="{% url 'mailing:message_create' %}" class="btn btn-primary">Создать сообщение</a>
-            </div>
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> Сообщения не найдены.
+            <a href="{% url 'message_create' %}" class="alert-link">Создайте первое сообщение</a>.
+        </div>
         {% endif %}
     </div>
 </div>

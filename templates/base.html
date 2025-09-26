@@ -4,168 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Система рассылок{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+    <!-- Custom CSS -->
     <style>
-        .navbar-nav .nav-link {
-            border-radius: 5px;
-            margin: 0 2px;
-            transition: all 0.3s ease;
-        }
-        .navbar-nav .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
-            transform: translateY(-1px);
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
         }
         .navbar-brand {
-            font-weight: bold;
-            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .jumbotron {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'mailing:home' %}">
-                📧 Система рассылок
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-send"></i> Система рассылок
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarNav" aria-controls="navbarNav"
-                    aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
+                {% if user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
-                    <!-- Главная -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}"
-                           href="{% url 'mailing:home' %}">
-                            🏠 Главная
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="bi bi-house"></i> Главная
                         </a>
                     </li>
-
-                    <!-- Клиенты -->
                     <li class="nav-item">
-                        <a class="nav-link {% if 'clients' in request.path %}active{% endif %}"
-                           href="{% url 'mailing:client_list' %}">
-                            👥 Клиенты
-                            {% if request.path == '/clients/' %}
-                            <span class="visually-hidden">(текущая)</span>
-                            {% endif %}
+                        <a class="nav-link" href="{% url 'client_list' %}">
+                            <i class="bi bi-people"></i> Клиенты
                         </a>
                     </li>
-
-                    <!-- Сообщения -->
                     <li class="nav-item">
-                        <a class="nav-link {% if 'messages' in request.path %}active{% endif %}"
-                           href="{% url 'mailing:message_list' %}">
-                            📨 Сообщения
-                            {% if 'messages' in request.path %}
-                            <span class="visually-hidden">(текущая)</span>
-                            {% endif %}
+                        <a class="nav-link" href="{% url 'message_list' %}">
+                            <i class="bi bi-envelope"></i> Сообщения
                         </a>
                     </li>
-
-                    <!-- Будущий раздел Рассылок -->
                     <li class="nav-item">
-                        <a class="nav-link text-muted" href="#" style="opacity: 0.6;">
-                            📊 Рассылки
-                            <small class="badge bg-secondary ms-1">скоро</small>
+                        <a class="nav-link" href="{% url 'mailing_list' %}">
+                            <i class="bi bi-send"></i> Рассылки
                         </a>
                     </li>
                 </ul>
-
                 <ul class="navbar-nav">
-                    <!-- Админка -->
                     <li class="nav-item">
-                        <a class="nav-link {% if 'admin' in request.path %}active{% endif %}"
-                           href="/admin/" target="_blank">
-                            ⚙️ Админка
-                        </a>
+                        <span class="navbar-text me-3">
+                            <i class="bi bi-person"></i> {{ user.username }}
+                        </span>
                     </li>
-
-                    <!-- Статистика (будущий функционал) -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-muted" href="#"
-                           id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-                           aria-expanded="false" style="opacity: 0.6;">
-                            📈 Статистика
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="bi bi-box-arrow-right"></i> Выйти
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="#">По клиентам</a></li>
-                            <li><a class="dropdown-item" href="#">По сообщениям</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">Общая статистика</a></li>
-                        </ul>
                     </li>
                 </ul>
+                {% else %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="bi bi-box-arrow-in-right"></i> Войти
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <!-- Сообщения Django -->
+    <!-- Main Content -->
+    <main class="container">
         {% if messages %}
+        <div class="messages">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             {% endfor %}
+        </div>
         {% endif %}
 
         {% block content %}
+        <!-- Content will be injected here -->
         {% endblock %}
-    </div>
+    </main>
 
-    <!-- Футер -->
+    <!-- Footer -->
     <footer class="bg-dark text-light mt-5 py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Система рассылок</h5>
-                    <p class="mb-0">Управление клиентами и сообщениями для email рассылок</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0">
-                        <strong>Разделы:</strong><br>
-                        <a href="{% url 'mailing:home' %}" class="text-light">Главная</a> |
-                        <a href="{% url 'mailing:client_list' %}" class="text-light">Клиенты</a> |
-                        <a href="{% url 'mailing:message_list' %}" class="text-light">Сообщения</a>
-                    </p>
-                </div>
-            </div>
-            <hr class="my-3">
-            <div class="text-center">
-                <small>&copy; 2025 Система рассылок. Все права защищены.</small>
-            </div>
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 Система рассылок. Все права защищены.</p>
         </div>
     </footer>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Скрипт для автоматического скрытия alert через 5 секунд -->
+    <!-- Custom JS -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Автоскрытие alert через 5 секунд
-            const alerts = document.querySelectorAll('.alert');
+        // Автоматическое скрытие alert через 5 секунд
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }, 5000);
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
             });
-
-            // Подсветка активного пункта меню
-            const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-
-            navLinks.forEach(function(link) {
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('active');
-                }
-            });
-        });
+        }, 5000);
     </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Client, Message
+from .models import Client, Mailing, Message
 
 
 class ClientForm(forms.ModelForm):
@@ -65,3 +65,35 @@ class MessageForm(forms.ModelForm):
                 "Тело письма должно содержать не менее 10 символов"
             )
         return body
+
+
+class MailingForm(forms.ModelForm):
+    clients = forms.ModelMultipleChoiceField(
+        queryset=Client.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Клиенты",
+    )
+
+    class Meta:
+        model = Mailing
+        fields = [
+            "title",
+            "message",
+            "clients",
+            "start_time",
+            "end_time",
+            "period",
+            "is_active",
+        ]
+        widgets = {
+            "start_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "end_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["message"].queryset = Message.objects.filter(owner=user)
+            self.fields["clients"].queryset = Client.objects.filter(owner=user)

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title|default:"Форма рассылки" }} - Система рассылок{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-send"></i> {{ title|default:"Создать рассылку" }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Пожалуйста, исправьте ошибки в форме.
+                        {{ form.errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Название рассылки -->
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                            Название рассылки *
+                        </label>
+                        <input type="text" name="title" class="form-control" 
+                               value="{{ form.title.value|default:'' }}" 
+                               required id="{{ form.title.id_for_label }}">
+                        {% if form.title.help_text %}
+                        <small class="form-text text-muted">{{ form.title.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Сообщение -->
+                    <div class="mb-3">
+                        <label for="{{ form.message.id_for_label }}" class="form-label">
+                            Сообщение *
+                        </label>
+                        <select name="message" class="form-select" required id="{{ form.message.id_for_label }}">
+                            <option value="">Выберите сообщение...</option>
+                            {% for message in form.message.field.queryset %}
+                            <option value="{{ message.pk }}" 
+                                    {% if form.message.value == message.pk %}selected{% endif %}>
+                                {{ message.subject }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.message.help_text %}
+                        <small class="form-text text-muted">{{ form.message.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Клиенты -->
+                    <div class="mb-3">
+                        <label class="form-label">Клиенты *</label>
+                        <div class="border p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                            {% for client in form.clients.field.queryset %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="clients" value="{{ client.pk }}"
+                                       id="client_{{ client.pk }}"
+                                       {% if client.pk in form.clients.value %}checked{% endif %}>
+                                <label class="form-check-label" for="client_{{ client.pk }}">
+                                    {{ client.full_name }} ({{ client.email }})
+                                </label>
+                            </div>
+                            {% empty %}
+                            <div class="text-muted">Нет доступных клиентов</div>
+                            {% endfor %}
+                        </div>
+                        {% if form.clients.help_text %}
+                        <small class="form-text text-muted">{{ form.clients.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Время начала -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.start_time.id_for_label }}" class="form-label">
+                                Время начала *
+                            </label>
+                            <input type="datetime-local" name="start_time" class="form-control"
+                                   value="{{ form.start_time.value|default:'' }}"
+                                   required id="{{ form.start_time.id_for_label }}">
+                        </div>
+                        
+                        <!-- Время окончания -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.end_time.id_for_label }}" class="form-label">
+                                Время окончания *
+                            </label>
+                            <input type="datetime-local" name="end_time" class="form-control"
+                                   value="{{ form.end_time.value|default:'' }}"
+                                   required id="{{ form.end_time.id_for_label }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Периодичность -->
+                    <div class="mb-3">
+                        <label for="{{ form.period.id_for_label }}" class="form-label">
+                            Периодичность
+                        </label>
+                        <select name="period" class="form-select" id="{{ form.period.id_for_label }}">
+                            {% for value, label in form.period.field.choices %}
+                            <option value="{{ value }}" 
+                                    {% if form.period.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Активность -->
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" name="is_active" class="form-check-input"
+                               id="{{ form.is_active.id_for_label }}"
+                               {% if form.is_active.value %}checked{% endif %}>
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            Активная рассылка
+                        </label>
+                    </div>
+                    
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'mailing_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Сохранить рассылку
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для валидации дат -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const startTime = document.querySelector('input[name="start_time"]');
+    const endTime = document.querySelector('input[name="end_time"]');
+    
+    form.addEventListener('submit', function(e) {
+        if (startTime.value && endTime.value) {
+            const start = new Date(startTime.value);
+            const end = new Date(endTime.value);
+            
+            if (end <= start) {
+                e.preventDefault();
+                alert('Время окончания должно быть позже времени начала!');
+                endTime.focus();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

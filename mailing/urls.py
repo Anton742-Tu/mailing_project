@@ -1,17 +1,53 @@
+from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 
-from . import views
-
-app_name = "mailing"
+from .views import (  # Function-based views для клиентов; Function-based views для сообщений; Class-based views для рассылок
+    CustomLoginView,
+    CustomLogoutView,
+    HomeView,
+    MailingCreateView,
+    MailingDeleteView,
+    MailingDetailView,
+    MailingListView,
+    MailingUpdateView,
+    client_create,
+    client_delete,
+    client_detail,
+    client_edit,
+    client_list,
+    message_create,
+    message_delete,
+    message_detail,
+    message_edit,
+    message_list,
+)
 
 urlpatterns = [
-    # Главная страница и клиенты
-    path("", views.home_page, name="home"),
-    path("clients/", views.client_list, name="client_list"),
+    # Главная страница
+    path("", HomeView.as_view(), name="home"),
+    # Аутентификация
+    path("login/", CustomLoginView.as_view(), name="login"),
+    path("logout/", CustomLogoutView.as_view(), name="logout"),
+    # Клиенты
+    path("clients/", client_list, name="client_list"),
+    path("clients/create/", client_create, name="client_create"),
+    path("clients/<int:pk>/", client_detail, name="client_detail"),
+    path("clients/<int:pk>/edit/", client_edit, name="client_edit"),
+    path("clients/<int:pk>/delete/", client_delete, name="client_delete"),
     # Сообщения
-    path('messages/', views.message_list, name='message_list'),
-    path('messages/create/', views.message_create, name='message_create'),
-    path('messages/edit/<int:pk>/', views.message_edit, name='message_edit'),
-    path('messages/delete/<int:pk>/', views.message_delete, name='message_delete'),
-    path('messages/detail/<int:pk>/', views.message_detail, name='message_detail'),
+    path('messages/', message_list, name='message_list'),
+    path('messages/create/', message_create, name='message_create'),
+    path('messages/<int:pk>/', message_detail, name='message_detail'),
+    path('messages/<int:pk>/edit/', message_edit, name='message_edit'),
+    path('messages/<int:pk>/delete/', message_delete, name='message_delete'),
+    # Рассылки
+    path("mailings/", MailingListView.as_view(), name="mailing_list"),
+    path("mailings/create/", MailingCreateView.as_view(), name="mailing_create"),
+    path("mailings/<int:pk>/", MailingDetailView.as_view(), name="mailing_detail"),
+    path(
+        "mailings/<int:pk>/update/", MailingUpdateView.as_view(), name="mailing_update"
+    ),
+    path(
+        "mailings/<int:pk>/delete/", MailingDeleteView.as_view(), name="mailing_delete"
+    ),
 ]

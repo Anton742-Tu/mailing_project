@@ -1,79 +1,168 @@
 {% extends 'base.html' %}
 
-{% block title %}Главная - Система рассылок{% endblock %}
+{% block title %}Главная страница - Система рассылок{% endblock %}
 
 {% block content %}
-<div class="jumbotron bg-light p-5 rounded mb-5">
-    <h1 class="display-4">📧 Добро пожаловать!</h1>
-    <p class="lead">Система управления email рассылками</p>
-    <hr class="my-4">
-    <p>Используйте навигацию выше для доступа к разделам системы.</p>
-</div>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="jumbotron bg-light p-5 rounded mb-4">
+                <h1 class="display-4"><i class="bi bi-send"></i> Система рассылок</h1>
+                <p class="lead">Управляйте email рассылками эффективно и просто</p>
+                <hr class="my-4">
 
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">👥 Клиенты</h2>
-                <p class="card-text">Управление списком получателей рассылок</p>
-                <div class="mt-3">
-                    <a href="{% url 'mailing:client_list' %}" class="btn btn-primary me-2">Перейти</a>
-                    <a href="/admin/mailing/client/add/" class="btn btn-outline-primary">Добавить</a>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-primary">{{ client_count }}</h3>
+                                <p class="card-text"><strong>Клиентов</strong></p>
+                                <a href="{% url 'client_list' %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-people"></i> Управление
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ message_count }}</h3>
+                                <p class="card-text"><strong>Шаблонов сообщений</strong></p>
+                                <a href="{% url 'message_list' %}" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-envelope"></i> Управление
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-warning">{{ mailing_count }}</h3>
+                                <p class="card-text"><strong>Рассылок</strong></p>
+                                <a href="{% url 'mailing_list' %}" class="btn btn-outline-warning btn-sm">
+                                    <i class="bi bi-send"></i> Управление
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-info">{{ active_mailing_count }}</h3>
+                                <p class="card-text"><strong>Активных рассылок</strong></p>
+                                <a href="{% url 'mailing_list' %}" class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-play-circle"></i> Просмотр
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">📨 Сообщения</h2>
-                <p class="card-text">Создание и управление шаблонами сообщений</p>
-                <div class="mt-3">
-                    <a href="{% url 'mailing:message_list' %}" class="btn btn-success me-2">Перейти</a>
-                    <a href="{% url 'mailing:message_create' %}" class="btn btn-outline-success">Создать</a>
+    <!-- Быстрые действия -->
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-person-plus display-4 text-primary"></i>
+                    <h5>Добавить клиента</h5>
+                    <p>Создайте нового клиента для рассылок</p>
+                    <a href="{% url 'client_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Добавить
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-envelope-plus display-4 text-success"></i>
+                    <h5>Создать шаблон</h5>
+                    <p>Создайте новое сообщение для рассылок</p>
+                    <a href="{% url 'message_create' %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Создать
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-send-plus display-4 text-warning"></i>
+                    <h5>Новая рассылка</h5>
+                    <p>Запустите новую email рассылку</p>
+                    <a href="{% url 'mailing_create' %}" class="btn btn-warning">
+                        <i class="bi bi-plus-circle"></i> Создать
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h2 class="card-title">📊 Рассылки</h2>
-                <p class="card-text">Запуск и мониторинг email рассылок</p>
-                <div class="mt-3">
-                    <button class="btn btn-secondary" disabled>Скоро</button>
+    <!-- Последние активности -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-clock-history"></i> Последние активности</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="alert alert-light">
+                                <h6>Клиенты</h6>
+                                <p class="mb-0">{{ client_count }} всего</p>
+                                <small class="text-muted">{{ active_clients_count|default:client_count }} активных</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-light">
+                                <h6>Сообщения</h6>
+                                <p class="mb-0">{{ message_count }} всего</p>
+                                <small class="text-muted">{{ active_messages_count|default:message_count }} активных</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-light">
+                                <h6>Рассылки</h6>
+                                <p class="mb-0">{{ mailing_count }} всего</p>
+                                <small class="text-muted">{{ active_mailing_count }} активных</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-light">
+                                <h6>Статус системы</h6>
+                                <p class="mb-0">
+                                    <span class="badge bg-success">Работает</span>
+                                </p>
+                                <small class="text-muted">Все функции доступны</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Быстрые действия -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0">🚀 Быстрые действия</h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <a href="{% url 'mailing:client_list' %}" class="btn btn-outline-primary w-100 mb-2">
-                    👥 Просмотреть всех клиентов
-                </a>
-                <a href="{% url 'mailing:message_list' %}" class="btn btn-outline-success w-100 mb-2">
-                    📨 Просмотреть все сообщения
-                </a>
-            </div>
-            <div class="col-md-6">
-                <a href="/admin/mailing/client/add/" class="btn btn-outline-info w-100 mb-2">
-                    ➕ Быстро добавить клиента
-                </a>
-                <a href="{% url 'mailing:message_create' %}" class="btn btn-outline-warning w-100 mb-2">
-                    📝 Быстро создать сообщение
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+.card {
+    transition: transform 0.2s;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.display-4 {
+    font-size: 2.5rem;
+    font-weight: 300;
+}
+</style>
 {% endblock %}
