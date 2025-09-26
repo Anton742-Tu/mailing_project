@@ -1,27 +1,24 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+
 from mailing.models import Mailing
 from mailing.services import send_mailing
 
 
 class Command(BaseCommand):
-    help = 'Отправка конкретной рассылки по ID'
+    help = "Отправка конкретной рассылки по ID"
 
     def add_arguments(self, parser):
+        parser.add_argument("mailing_id", type=int, help="ID рассылки для отправки")
         parser.add_argument(
-            'mailing_id',
-            type=int,
-            help='ID рассылки для отправки'
-        )
-        parser.add_argument(
-            '--force',
-            action='store_true',
-            help='Принудительная отправка, даже если время не подходит',
+            "--force",
+            action="store_true",
+            help="Принудительная отправка, даже если время не подходит",
         )
 
     def handle(self, *args, **options):
-        mailing_id = options['mailing_id']
-        force_send = options['force']
+        mailing_id = options["mailing_id"]
+        force_send = options["force"]
 
         try:
             mailing = Mailing.objects.get(id=mailing_id)
@@ -41,10 +38,12 @@ class Command(BaseCommand):
                     self.style.WARNING("⚠️  Рассылка не активна в настоящее время")
                 )
                 self.stdout.write(f"   Сейчас: {now}")
-                self.stdout.write(f"   Активна с: {mailing.start_time} по {mailing.end_time}")
+                self.stdout.write(
+                    f"   Активна с: {mailing.start_time} по {mailing.end_time}"
+                )
 
                 response = input("Отправить принудительно? (y/n): ")
-                if response.lower() != 'y':
+                if response.lower() != "y":
                     self.stdout.write("❌ Отправка отменена")
                     return
 
@@ -58,9 +57,7 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(f"   Результат: {message}")
             else:
-                self.stdout.write(
-                    self.style.ERROR(f"❌ Ошибка отправки рассылки")
-                )
+                self.stdout.write(self.style.ERROR(f"❌ Ошибка отправки рассылки"))
                 self.stdout.write(f"   Ошибка: {message}")
 
         except Mailing.DoesNotExist:
@@ -68,6 +65,4 @@ class Command(BaseCommand):
                 self.style.ERROR(f"❌ Рассылка с ID {mailing_id} не найдена")
             )
         except Exception as e:
-            self.stdout.write(
-                self.style.ERROR(f"❌ Неожиданная ошибка: {str(e)}")
-            )
+            self.stdout.write(self.style.ERROR(f"❌ Неожиданная ошибка: {str(e)}"))

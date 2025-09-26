@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-5">Статистика рассылок</h1>
+    
+    <div class="row text-center">
+        <!-- Всего рассылок -->
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h2>{{ total_mailings }}</h2>
+                    <p>Всего рассылок</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Активные рассылки -->
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h2>{{ active_mailings }}</h2>
+                    <p>Активных рассылок</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Уникальные клиенты -->
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h2>{{ unique_clients }}</h2>
+                    <p>Уникальных клиентов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Дополнительные ссылки -->
+    <div class="row mt-5">
+        <div class="col text-center">
+            <a href="{% url 'mailing_list' %}" class="btn btn-outline-primary me-2">Все рассылки</a>
+            <a href="{% url 'client_list' %}" class="btn btn-outline-secondary me-2">Клиенты</a>
+            <a href="{% url 'mailing_create' %}" class="btn btn-outline-success">Создать рассылку</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,8 @@
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 
-from .views import (  # Function-based views для клиентов; Function-based views для сообщений; Class-based views для рассылок
+from . import views
+from .views import (
     CustomLoginView,
     CustomLogoutView,
     HomeView,
@@ -52,5 +53,5 @@ urlpatterns = [
         "mailings/<int:pk>/delete/", MailingDeleteView.as_view(), name="mailing_delete"
     ),
     # Ручная отправка рассылки
-    path('mailings/<int:pk>/send-now/', send_mailing_now, name='mailing_send_now'),
+    path("mailings/<int:pk>/send-now/", send_mailing_now, name="mailing_send_now"),
 ]

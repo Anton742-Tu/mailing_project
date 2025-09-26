@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.paginator import Paginator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -22,29 +22,22 @@ from .forms import ClientForm, MailingForm, MessageForm
 from .models import Client, Mailing, MailingLog, Message
 from .services import send_mailing
 
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import Mailing, Client
+
 
 class HomeView(LoginRequiredMixin, TemplateView):
-    template_name = "mailing/home.html"
+    template_name = 'mailing/homepage.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Статистика для главной страницы
-        context["client_count"] = Client.objects.filter(owner=user).count()
-        context["active_clients_count"] = Client.objects.filter(
-            owner=user, is_active=True
-        ).count()
-
-        context["message_count"] = Message.objects.filter(owner=user).count()
-        context["active_messages_count"] = Message.objects.filter(
-            owner=user, is_active=True
-        ).count()
-
-        context["mailing_count"] = Mailing.objects.filter(owner=user).count()
-        context["active_mailing_count"] = Mailing.objects.filter(
-            owner=user, is_active=True
-        ).count()
+        # Статистика по заданию: рассылки, активные рассылки, уникальные клиенты
+        context['total_mailings'] = Mailing.objects.filter(owner=user).count()
+        context['active_mailings'] = Mailing.objects.filter(owner=user, status='launched').count()
+        context['unique_clients'] = Client.objects.filter(owner=user).count()
 
         return context
 
@@ -346,10 +339,10 @@ def send_mailing_now(request, pk):
 
     # Дополнительная проверка владельца
     if mailing.owner != request.user:
-        return JsonResponse({'success': False, 'message': 'Доступ запрещен'})
+        return JsonResponse({"success": False, "message": "Доступ запрещен"})
 
     try:
         success, message = send_mailing(mailing.id)
-        return JsonResponse({'success': success, 'message': message})
+        return JsonResponse({"success": success, "message": message})
     except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Ошибка: {str(e)}'})
+        return JsonResponse({"success": False, "message": f"Ошибка: {str(e)}"})
