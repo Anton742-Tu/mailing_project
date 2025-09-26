@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -19,6 +20,7 @@ from django.views.generic import (
 
 from .forms import ClientForm, MailingForm, MessageForm
 from .models import Client, Mailing, MailingLog, Message
+from .services import send_mailing
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -30,10 +32,14 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
         # Статистика для главной страницы
         context["client_count"] = Client.objects.filter(owner=user).count()
-        context["active_clients_count"] = Client.objects.filter(owner=user, is_active=True).count()
+        context["active_clients_count"] = Client.objects.filter(
+            owner=user, is_active=True
+        ).count()
 
         context["message_count"] = Message.objects.filter(owner=user).count()
-        context["active_messages_count"] = Message.objects.filter(owner=user, is_active=True).count()
+        context["active_messages_count"] = Message.objects.filter(
+            owner=user, is_active=True
+        ).count()
 
         context["mailing_count"] = Mailing.objects.filter(owner=user).count()
         context["active_mailing_count"] = Mailing.objects.filter(
@@ -82,6 +88,7 @@ def client_create(request):
             client = form.save(commit=False)
             client.owner = request.user
             client.save()
+            print(f"Создан клиент: {client.email}, owner: {client.owner}")  # отладка
             messages.success(request, f'Клиент "{client.email}" успешно создан!')
             return redirect("client_list")
         else:
@@ -151,7 +158,8 @@ def message_list(request):
     search_query = request.GET.get("search", "")
     if search_query:
         message_list = message_list.filter(
-            Q(subject__icontains=search_query) | Q(body__icontains=search_query)  # ← Используем Q вместо models.Q
+            Q(subject__icontains=search_query)
+            | Q(body__icontains=search_query)  # ← Используем Q вместо models.Q
         )
 
     # Фильтр по активности
@@ -328,3 +336,20 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
         )
 
         return context
+
+
+@login_required
+@require_POST
+def send_mailing_now(request, pk):
+    """Ручная отправка рассылки через интерфейс"""
+    mailing = get_object_or_404(Mailing, pk=pk, owner=request.user)
+
+    # Дополнительная проверка владельца
+    if mailing.owner != request.user:
+        return JsonResponse({'success': False, 'message': 'Доступ запрещен'})
+
+    try:
+        success, message = send_mailing(mailing.id)
+        return JsonResponse({'success': success, 'message': message})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Ошибка: {str(e)}'})

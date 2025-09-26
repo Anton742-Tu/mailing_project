@@ -1,5 +1,6 @@
-from django.test import TestCase
 from django.db import connection
+from django.test import TestCase
+
 
 class DatabaseTest(TestCase):
     def test_database_connection(self):

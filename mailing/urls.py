@@ -20,6 +20,7 @@ from .views import (  # Function-based views для клиентов; Function-b
     message_detail,
     message_edit,
     message_list,
+    send_mailing_now,
 )
 
 urlpatterns = [
@@ -35,11 +36,11 @@ urlpatterns = [
     path("clients/<int:pk>/edit/", client_edit, name="client_edit"),
     path("clients/<int:pk>/delete/", client_delete, name="client_delete"),
     # Сообщения
-    path('messages/', message_list, name='message_list'),
-    path('messages/create/', message_create, name='message_create'),
-    path('messages/<int:pk>/', message_detail, name='message_detail'),
-    path('messages/<int:pk>/edit/', message_edit, name='message_edit'),
-    path('messages/<int:pk>/delete/', message_delete, name='message_delete'),
+    path("messages/", message_list, name="message_list"),
+    path("messages/create/", message_create, name="message_create"),
+    path("messages/<int:pk>/", message_detail, name="message_detail"),
+    path("messages/<int:pk>/edit/", message_edit, name="message_edit"),
+    path("messages/<int:pk>/delete/", message_delete, name="message_delete"),
     # Рассылки
     path("mailings/", MailingListView.as_view(), name="mailing_list"),
     path("mailings/create/", MailingCreateView.as_view(), name="mailing_create"),
@@ -50,4 +51,6 @@ urlpatterns = [
     path(
         "mailings/<int:pk>/delete/", MailingDeleteView.as_view(), name="mailing_delete"
     ),
+    # Ручная отправка рассылки
+    path('mailings/<int:pk>/send-now/', send_mailing_now, name='mailing_send_now'),
 ]
