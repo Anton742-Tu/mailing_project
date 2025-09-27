@@ -1,47 +1,122 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+
+{% block title %}Главная - Система рассылок{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="text-center mb-5">Статистика рассылок</h1>
-    
-    <div class="row text-center">
-        <!-- Всего рассылок -->
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
+<div class="container mt-4">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>📧 Сервис управления рассылками</h1>
+            <p class="lead mb-0 text-muted">Управляйте email-рассылками легко и эффективно</p>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-primary text-white text-center">
                 <div class="card-body">
                     <h2>{{ total_mailings }}</h2>
-                    <p>Всего рассылок</p>
+                    <p class="mb-0">Всего рассылок</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Активные рассылки -->
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white text-center">
                 <div class="card-body">
                     <h2>{{ active_mailings }}</h2>
-                    <p>Активных рассылок</p>
+                    <p class="mb-0">Активных рассылок</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Уникальные клиенты -->
-        <div class="col-md-4">
-            <div class="card bg-info text-white">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-info text-white text-center">
                 <div class="card-body">
                     <h2>{{ unique_clients }}</h2>
-                    <p>Уникальных клиентов</p>
+                    <p class="mb-0">Уникальных клиентов</p>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Дополнительные ссылки -->
-    <div class="row mt-5">
-        <div class="col text-center">
-            <a href="{% url 'mailing_list' %}" class="btn btn-outline-primary me-2">Все рассылки</a>
-            <a href="{% url 'client_list' %}" class="btn btn-outline-secondary me-2">Клиенты</a>
-            <a href="{% url 'mailing_create' %}" class="btn btn-outline-success">Создать рассылку</a>
+
+    <!-- Быстрые действия -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🚀 Быстрые действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'client_create' %}" class="btn btn-outline-primary btn-lg w-100">
+                                👥 Добавить клиента
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'mailing_create' %}" class="btn btn-outline-success btn-lg w-100">
+                                📧 Создать рассылку
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'client_list' %}" class="btn btn-outline-info btn-lg w-100">
+                                📋 Все клиенты
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'mailing_list' %}" class="btn btn-outline-warning btn-lg w-100">
+                                📊 Все рассылки
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние активности (опционально) -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📞 Недавно добавленные клиенты</h5>
+                </div>
+                <div class="card-body">
+                    {% if unique_clients > 0 %}
+                        <p>У вас {{ unique_clients }} клиент(ов) в базе</p>
+                        <a href="{% url 'client_list' %}" class="btn btn-sm btn-outline-primary">
+                            Посмотреть всех клиентов
+                        </a>
+                    {% else %}
+                        <p class="text-muted">Клиентов пока нет</p>
+                        <a href="{% url 'client_create' %}" class="btn btn-sm btn-success">
+                            Добавить первого клиента
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📨 Активные рассылки</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_mailings > 0 %}
+                        <p>Сейчас активно {{ active_mailings }} рассылок</p>
+                        <a href="{% url 'mailing_list' %}" class="btn btn-sm btn-outline-success">
+                            Управлять рассылками
+                        </a>
+                    {% else %}
+                        <p class="text-muted">Активных рассылок нет</p>
+                        <a href="{% url 'mailing_create' %}" class="btn btn-sm btn-success">
+                            Создать рассылку
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

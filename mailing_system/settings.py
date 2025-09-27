@@ -108,8 +108,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles" if not DEBUG else None
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Для разработки - письма в консоль
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 # Настройки email (для примера - Gmail)
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = True

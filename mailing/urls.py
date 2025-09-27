@@ -1,5 +1,6 @@
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import path
+from django.urls import include, path
 
 from . import views
 from .views import (
@@ -27,15 +28,14 @@ from .views import (
 urlpatterns = [
     # Главная страница
     path("", HomeView.as_view(), name="home"),
-    # Аутентификация
-    path("login/", CustomLoginView.as_view(), name="login"),
-    path("logout/", CustomLogoutView.as_view(), name="logout"),
+    # Регистрация
+    path("register/", views.register, name='register'),
     # Клиенты
-    path("clients/", client_list, name="client_list"),
-    path("clients/create/", client_create, name="client_create"),
-    path("clients/<int:pk>/", client_detail, name="client_detail"),
-    path("clients/<int:pk>/edit/", client_edit, name="client_edit"),
-    path("clients/<int:pk>/delete/", client_delete, name="client_delete"),
+    path("clients/", views.client_list, name="client_list"),
+    path("clients/create/", views.client_create, name="client_create"),
+    path("clients/<int:pk>/", views.client_detail, name="client_detail"),
+    path("clients/<int:pk>/edit/", views.client_edit, name="client_edit"),
+    path("clients/<int:pk>/delete/", views.client_delete, name="client_delete"),
     # Сообщения
     path("messages/", message_list, name="message_list"),
     path("messages/create/", message_create, name="message_create"),

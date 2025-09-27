@@ -1,5 +1,7 @@
 from django.contrib import messages
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.paginator import Paginator
@@ -22,22 +24,34 @@ from .forms import ClientForm, MailingForm, MessageForm
 from .models import Client, Mailing, MailingLog, Message
 from .services import send_mailing
 
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Mailing, Client
+
+def register(request):
+    """Регистрация нового пользователя"""
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # автоматический вход после регистрации
+            return redirect('home')  # на главную страницу
+    else:
+        form = UserCreationForm()
+
+    return render(request, 'registration/register.html', {'form': form})
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
-    template_name = 'mailing/homepage.html'
+    template_name = "mailing/homepage.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
         # Статистика по заданию: рассылки, активные рассылки, уникальные клиенты
-        context['total_mailings'] = Mailing.objects.filter(owner=user).count()
-        context['active_mailings'] = Mailing.objects.filter(owner=user, status='launched').count()
-        context['unique_clients'] = Client.objects.filter(owner=user).count()
+        context["total_mailings"] = Mailing.objects.filter(owner=user).count()
+        context["active_mailings"] = Mailing.objects.filter(
+            owner=user, status="launched"
+        ).count()
+        context["unique_clients"] = Client.objects.filter(owner=user).count()
 
         return context
 

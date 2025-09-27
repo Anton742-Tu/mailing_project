@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация - Система рассылок{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">📝 Регистрация</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Имя пользователя</label>
+                            <input type="text" name="username" class="form-control" id="id_username" required>
+                            <small class="form-text text-muted">Обязательное поле. Не более 150 символов.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Пароль</label>
+                            <input type="password" name="password1" class="form-control" id="id_password1" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_password2" class="form-label">Подтверждение пароля</label>
+                            <input type="password" name="password2" class="form-control" id="id_password2" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">Зарегистрироваться</button>
+                    </form>
+
+                    <hr>
+
+                    <div class="text-center">
+                        <a href="{% url 'login' %}" class="btn btn-link">Уже есть аккаунт? Войдите</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
