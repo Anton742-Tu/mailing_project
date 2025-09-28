@@ -1,0 +1,134 @@
+/* Стили для страниц рассылок */
+.mailing-title {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.mailing-status-created {
+    color: #6c757d;
+}
+
+.mailing-status-started {
+    color: #198754;
+}
+
+.mailing-status-completed {
+    color: #6c757d;
+}
+
+.mailing-period {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* Карточка рассылки */
+.mailing-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mailing-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+}
+
+.mailing-time {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* Форма рассылки */
+.mailing-form .form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.clients-checklist {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.client-checkbox-item {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.client-checkbox-item:hover {
+    background-color: #f8f9fa;
+}
+
+.client-checkbox-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Логи рассылки */
+.logs-table {
+    font-size: 0.875rem;
+}
+
+.log-success {
+    color: #198754;
+}
+
+.log-failed {
+    color: #dc3545;
+}
+
+.log-time {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+/* Статистика рассылки */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.75rem;
+}
+
+/* Кнопка отправки */
+.send-now-btn {
+    position: relative;
+}
+
+.send-now-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .mailing-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

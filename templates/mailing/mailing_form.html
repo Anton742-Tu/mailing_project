@@ -141,24 +141,6 @@
 </div>
 
 <!-- Скрипт для валидации дат -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    const startTime = document.querySelector('input[name="start_time"]');
-    const endTime = document.querySelector('input[name="end_time"]');
-    
-    form.addEventListener('submit', function(e) {
-        if (startTime.value && endTime.value) {
-            const start = new Date(startTime.value);
-            const end = new Date(endTime.value);
-            
-            if (end <= start) {
-                e.preventDefault();
-                alert('Время окончания должно быть позже времени начала!');
-                endTime.focus();
-            }
-        }
-    });
-});
-</script>
+{% block extra_js %}
+<script src="/static/js/mailings.js"></script>
 {% endblock %}

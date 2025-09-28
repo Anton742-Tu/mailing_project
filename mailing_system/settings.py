@@ -48,8 +48,8 @@ ROOT_URLCONF = "mailing_system.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
+        "DIRS": [BASE_DIR / "templates"],  # ✅ Корневая папка templates
+        "APP_DIRS": True,  # ✅ Ищет шаблоны в папках приложений
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.debug",

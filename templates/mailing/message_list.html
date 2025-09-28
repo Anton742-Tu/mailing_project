@@ -2,6 +2,10 @@
 
 {% block title %}Сообщения - Система рассылок{% endblock %}
 
+{% block extra_css %}
+<link href="/static/css/messages.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-envelope"></i> Сообщения</h1>
@@ -12,7 +16,7 @@
 
 <!-- Статистика -->
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">{{ total_count }}</h5>
@@ -20,7 +24,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title text-success">{{ active_count }}</h5>
@@ -28,13 +32,47 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title text-secondary">{{ inactive_count|default:0 }}</h5>
+                <h5 class="card-title text-secondary">{{ inactive_count }}</h5>
                 <p class="card-text">Неактивных</p>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Поиск и фильтры -->
+<div class="card mb-4">
+    <div class="card-body message-filters">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Поиск по теме или содержанию..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-4">
+                <div class="btn-group">
+                    <span class="btn btn-outline-secondary disabled">Статус:</span>
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}is_active=true"
+                       class="btn btn-outline-success {% if is_active_filter == 'true' %}active{% endif %}">
+                        Активные
+                    </a>
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}is_active=false"
+                       class="btn btn-outline-secondary {% if is_active_filter == 'false' %}active{% endif %}">
+                        Неактивные
+                    </a>
+                    <a href="?{% if search_query %}search={{ search_query }}{% endif %}"
+                       class="btn btn-outline-primary {% if not is_active_filter %}active{% endif %}">
+                        Все
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Применить
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -43,12 +81,12 @@
     <div class="card-body">
         {% if page_obj %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover messages-table">
                 <thead>
                     <tr>
                         <th>Тема</th>
+                        <th>Содержание</th>
                         <th>Статус</th>
-                        <th>Создано</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
@@ -56,18 +94,22 @@
                     {% for message in page_obj %}
                     <tr>
                         <td>
-                            <strong>{{ message.subject }}</strong>
-                            <br>
-                            <small class="text-muted">{{ message.body|truncatechars:100 }}</small>
+                            <div class="message-subject">{{ message.subject }}</div>
+                        </td>
+                        <td>
+                            <div class="message-body-preview">{{ message.body|truncatechars:100 }}</div>
                         </td>
                         <td>
                             {% if message.is_active %}
-                            <span class="badge bg-success">Активно</span>
+                            <span class="badge bg-success message-status-active">
+                                <i class="bi bi-check-circle"></i> Активно
+                            </span>
                             {% else %}
-                            <span class="badge bg-secondary">Неактивно</span>
+                            <span class="badge bg-secondary message-status-inactive">
+                                <i class="bi bi-x-circle"></i> Неактивно
+                            </span>
                             {% endif %}
                         </td>
-                        <td>{{ message.created_at|date:"d.m.Y H:i" }}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'message_detail' message.pk %}" class="btn btn-outline-primary">
@@ -93,19 +135,25 @@
             <ul class="pagination justify-content-center">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                        Назад
+                    </a>
                 </li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
                 <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                        {{ num }}
+                    </a>
                 </li>
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед</a>
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if is_active_filter %}&is_active={{ is_active_filter }}{% endif %}">
+                        Вперед
+                    </a>
                 </li>
                 {% endif %}
             </ul>
@@ -115,9 +163,17 @@
         {% else %}
         <div class="alert alert-info text-center">
             <i class="bi bi-info-circle"></i> Сообщения не найдены.
-            <a href="{% url 'message_create' %}" class="alert-link">Создайте первое сообщение</a>.
+            {% if search_query or is_active_filter %}
+                Попробуйте изменить условия поиска.
+            {% else %}
+                <a href="{% url 'message_create' %}" class="alert-link">Создайте первое сообщение</a>.
+            {% endif %}
         </div>
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/messages.js"></script>
 {% endblock %}

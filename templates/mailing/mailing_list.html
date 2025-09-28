@@ -2,6 +2,10 @@
 
 {% block title %}Рассылки - Система рассылок{% endblock %}
 
+{% block extra_css %}
+<link href="/static/css/mailings.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1><i class="bi bi-send"></i> Рассылки</h1>
@@ -13,22 +17,26 @@
 <div class="row">
     {% for mailing in mailings %}
     <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">{{ mailing.title }}</h5>
+        <div class="card h-100 mailing-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0 mailing-title">{{ mailing.title }}</h5>
                 <span class="badge bg-{% if mailing.status == 'completed' %}success{% elif mailing.status == 'started' %}warning{% else %}info{% endif %}">
                     {{ mailing.get_status_display }}
                 </span>
             </div>
             <div class="card-body">
                 <p class="card-text"><strong>Сообщение:</strong> {{ mailing.message.subject }}</p>
-                <p class="card-text"><strong>Клиентов:</strong> {{ mailing.clients.count }}</p>
-                <p class="card-text"><strong>Период:</strong> {{ mailing.get_period_display }}</p>
-                <p class="card-text"><strong>Начало:</strong> {{ mailing.start_time|date:"d.m.Y H:i" }}</p>
-                <p class="card-text"><strong>Окончание:</strong> {{ mailing.end_time|date:"d.m.Y H:i" }}</p>
+                <div class="mailing-stats">
+                    <span><i class="bi bi-people"></i> Клиентов: {{ mailing.clients.count }}</span>
+                    <span class="mailing-period"><i class="bi bi-clock"></i> {{ mailing.get_period_display }}</span>
+                </div>
+                <div class="mailing-time">
+                    <small><i class="bi bi-play-circle"></i> Начало: {{ mailing.start_time|date:"d.m.Y H:i" }}</small><br>
+                    <small><i class="bi bi-stop-circle"></i> Окончание: {{ mailing.end_time|date:"d.m.Y H:i" }}</small>
+                </div>
 
                 {% if mailing.is_active_now %}
-                <span class="badge bg-success">Активна сейчас</span>
+                <span class="badge bg-success mt-2">Активна сейчас</span>
                 {% endif %}
             </div>
             <div class="card-footer">
@@ -55,4 +63,8 @@
     </div>
     {% endfor %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/mailings.js"></script>
 {% endblock %}
