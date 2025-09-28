@@ -39,9 +39,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "created_at",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Дата создания"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Дата создания"),
                 ),
                 (
                     "updated_at",
@@ -84,9 +82,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="client",
             name="email",
-            field=models.EmailField(
-                max_length=255, unique=True, verbose_name="Email адрес"
-            ),
+            field=models.EmailField(max_length=255, unique=True, verbose_name="Email адрес"),
         ),
         migrations.AlterField(
             model_name="client",

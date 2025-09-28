@@ -107,9 +107,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "attempt_time",
-                    models.DateTimeField(
-                        auto_now_add=True, verbose_name="Время попытки"
-                    ),
+                    models.DateTimeField(auto_now_add=True, verbose_name="Время попытки"),
                 ),
                 (
                     "status",
@@ -121,15 +119,11 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "server_response",
-                    models.TextField(
-                        blank=True, null=True, verbose_name="Ответ сервера"
-                    ),
+                    models.TextField(blank=True, null=True, verbose_name="Ответ сервера"),
                 ),
                 (
                     "error_message",
-                    models.TextField(
-                        blank=True, null=True, verbose_name="Сообщение об ошибке"
-                    ),
+                    models.TextField(blank=True, null=True, verbose_name="Сообщение об ошибке"),
                 ),
                 (
                     "client",

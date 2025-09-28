@@ -1,8 +1,6 @@
-from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import include, path
+from django.urls import path
 
-from . import views
 from .views import (
     CustomLoginView,
     CustomLogoutView,
@@ -23,19 +21,21 @@ from .views import (
     message_edit,
     message_list,
     send_mailing_now,
+    statistics_view,
 )
 
 urlpatterns = [
     # Главная страница
     path("", HomeView.as_view(), name="home"),
-    # Регистрация
-    path("register/", views.register, name='register'),
+    # Аутентификация
+    path("login/", CustomLoginView.as_view(), name="login"),
+    path("logout/", CustomLogoutView.as_view(), name="logout"),
     # Клиенты
-    path("clients/", views.client_list, name="client_list"),
-    path("clients/create/", views.client_create, name="client_create"),
-    path("clients/<int:pk>/", views.client_detail, name="client_detail"),
-    path("clients/<int:pk>/edit/", views.client_edit, name="client_edit"),
-    path("clients/<int:pk>/delete/", views.client_delete, name="client_delete"),
+    path("clients/", client_list, name="client_list"),
+    path("clients/create/", client_create, name="client_create"),
+    path("clients/<int:pk>/", client_detail, name="client_detail"),
+    path("clients/<int:pk>/edit/", client_edit, name="client_edit"),
+    path("clients/<int:pk>/delete/", client_delete, name="client_delete"),
     # Сообщения
     path("messages/", message_list, name="message_list"),
     path("messages/create/", message_create, name="message_create"),
@@ -46,12 +46,9 @@ urlpatterns = [
     path("mailings/", MailingListView.as_view(), name="mailing_list"),
     path("mailings/create/", MailingCreateView.as_view(), name="mailing_create"),
     path("mailings/<int:pk>/", MailingDetailView.as_view(), name="mailing_detail"),
-    path(
-        "mailings/<int:pk>/update/", MailingUpdateView.as_view(), name="mailing_update"
-    ),
-    path(
-        "mailings/<int:pk>/delete/", MailingDeleteView.as_view(), name="mailing_delete"
-    ),
-    # Ручная отправка рассылки
-    path('mailings/<int:pk>/send-now/', send_mailing_now, name='mailing_send_now'),
+    path("mailings/<int:pk>/update/", MailingUpdateView.as_view(), name="mailing_update"),
+    path("mailings/<int:pk>/delete/", MailingDeleteView.as_view(), name="mailing_delete"),
+    path("mailings/<int:pk>/send-now/", send_mailing_now, name="mailing_send_now"),
+    # Статистика
+    path("statistics/", statistics_view, name="statistics"),
 ]

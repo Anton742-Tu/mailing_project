@@ -8,9 +8,7 @@ class Client(models.Model):
     full_name = models.CharField(max_length=200, verbose_name="ФИО")
     comment = models.TextField(blank=True, verbose_name="Комментарий")
     is_active = models.BooleanField(default=True, verbose_name="Активен")
-    owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True
-    )
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создан")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлен")
 
@@ -27,9 +25,7 @@ class Message(models.Model):
     subject = models.CharField(max_length=200, verbose_name="Тема письма")
     body = models.TextField(verbose_name="Тело письма")
     is_active = models.BooleanField(default=True, verbose_name="Активно")
-    owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True
-    )
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
 
@@ -57,9 +53,7 @@ class Mailing(models.Model):
     ]
 
     title = models.CharField(max_length=200, verbose_name="Название рассылки")
-    message = models.ForeignKey(
-        "Message", on_delete=models.CASCADE, verbose_name="Сообщение"
-    )
+    message = models.ForeignKey("Message", on_delete=models.CASCADE, verbose_name="Сообщение")
     clients = models.ManyToManyField("Client", verbose_name="Клиенты")
     start_time = models.DateTimeField(verbose_name="Время начала")
     end_time = models.DateTimeField(verbose_name="Время окончания")
@@ -69,9 +63,7 @@ class Mailing(models.Model):
         default="once",
         verbose_name="Периодичность",
     )
-    status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default="created", verbose_name="Статус"
-    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="created", verbose_name="Статус")
     is_active = models.BooleanField(default=True, verbose_name="Активна")
     owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создана")
@@ -95,6 +87,25 @@ class Mailing(models.Model):
 
     get_clients_count.short_description = "Кол-во клиентов"
 
+    def get_success_count(self):
+        """Количество успешных отправок для этой рассылки"""
+        return self.mailinglog_set.filter(status="success").count()
+
+    def get_failed_count(self):
+        """Количество неуспешных отправок для этой рассылки"""
+        return self.mailinglog_set.filter(status="failed").count()
+
+    def get_total_attempts(self):
+        """Общее количество попыток отправки"""
+        return self.mailinglog_set.count()
+
+    def get_success_rate(self):
+        """Процент успешных отправок"""
+        total = self.get_total_attempts()
+        if total > 0:
+            return (self.get_success_count() / total) * 100
+        return 0
+
 
 class MailingLog(models.Model):
     STATUS_CHOICES = [
@@ -102,22 +113,12 @@ class MailingLog(models.Model):
         ("failed", "Ошибка"),
     ]
 
-    mailing = models.ForeignKey(
-        "Mailing", on_delete=models.CASCADE, verbose_name="Рассылка"
-    )
-    client = models.ForeignKey(
-        "Client", on_delete=models.CASCADE, verbose_name="Клиент"
-    )
+    mailing = models.ForeignKey("Mailing", on_delete=models.CASCADE, verbose_name="Рассылка")
+    client = models.ForeignKey("Client", on_delete=models.CASCADE, verbose_name="Клиент")
     attempt_time = models.DateTimeField(auto_now_add=True, verbose_name="Время попытки")
-    status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, verbose_name="Статус"
-    )
-    server_response = models.TextField(
-        blank=True, null=True, verbose_name="Ответ сервера"
-    )
-    error_message = models.TextField(
-        blank=True, null=True, verbose_name="Сообщение об ошибке"
-    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, verbose_name="Статус")
+    server_response = models.TextField(blank=True, null=True, verbose_name="Ответ сервера")
+    error_message = models.TextField(blank=True, null=True, verbose_name="Сообщение об ошибке")
 
     class Meta:
         verbose_name = "Лог рассылки"
@@ -126,3 +127,40 @@ class MailingLog(models.Model):
 
     def __str__(self):
         return f"{self.mailing.title} - {self.client.email} ({self.status})"
+
+
+# Добавим менеджер для статистики
+class MailingManager(models.Manager):
+    def get_user_statistics(self, user):
+        """Статистика по всем рассылкам пользователя"""
+        user_mailings = self.filter(owner=user)
+
+        total_mailings = user_mailings.count()
+        active_mailings = user_mailings.filter(is_active=True).count()
+
+        # Статистика по логам
+        from django.db.models import Count, Q
+
+        logs_stats = MailingLog.objects.filter(mailing__owner=user).aggregate(
+            total_attempts=Count("id"),
+            success_attempts=Count("id", filter=Q(status="success")),
+            failed_attempts=Count("id", filter=Q(status="failed")),
+        )
+
+        return {
+            "total_mailings": total_mailings,
+            "active_mailings": active_mailings,
+            "completed_mailings": user_mailings.filter(status="completed").count(),
+            "total_attempts": logs_stats["total_attempts"] or 0,
+            "success_attempts": logs_stats["success_attempts"] or 0,
+            "failed_attempts": logs_stats["failed_attempts"] or 0,
+            "success_rate": (
+                (logs_stats["success_attempts"] / logs_stats["total_attempts"] * 100)
+                if logs_stats["total_attempts"] and logs_stats["total_attempts"] > 0
+                else 0
+            ),
+        }
+
+
+# Добавляем менеджер к модели
+Mailing.objects = MailingManager()

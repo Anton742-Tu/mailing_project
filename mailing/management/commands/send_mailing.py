@@ -34,13 +34,9 @@ class Command(BaseCommand):
             # Проверка времени рассылки
             now = timezone.now()
             if not force_send and not mailing.is_active_now:
-                self.stdout.write(
-                    self.style.WARNING("⚠️  Рассылка не активна в настоящее время")
-                )
+                self.stdout.write(self.style.WARNING("⚠️  Рассылка не активна в настоящее время"))
                 self.stdout.write(f"   Сейчас: {now}")
-                self.stdout.write(
-                    f"   Активна с: {mailing.start_time} по {mailing.end_time}"
-                )
+                self.stdout.write(f"   Активна с: {mailing.start_time} по {mailing.end_time}")
 
                 response = input("Отправить принудительно? (y/n): ")
                 if response.lower() != "y":
@@ -52,17 +48,13 @@ class Command(BaseCommand):
             success, message = send_mailing(mailing_id)
 
             if success:
-                self.stdout.write(
-                    self.style.SUCCESS(f"✅ Рассылка успешно отправлена!")
-                )
+                self.stdout.write(self.style.SUCCESS(f"✅ Рассылка успешно отправлена!"))
                 self.stdout.write(f"   Результат: {message}")
             else:
                 self.stdout.write(self.style.ERROR(f"❌ Ошибка отправки рассылки"))
                 self.stdout.write(f"   Ошибка: {message}")
 
         except Mailing.DoesNotExist:
-            self.stdout.write(
-                self.style.ERROR(f"❌ Рассылка с ID {mailing_id} не найдена")
-            )
+            self.stdout.write(self.style.ERROR(f"❌ Рассылка с ID {mailing_id} не найдена"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"❌ Неожиданная ошибка: {str(e)}"))

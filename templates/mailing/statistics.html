@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Статистика - Система рассылок{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/statistics.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-bar-chart"></i> Статистика и отчеты</h1>
+    <a href="{% url 'home' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left"></i> На главную
+    </a>
+</div>
+
+<!-- Основная статистика -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Общая статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number text-primary">{{ stats.total_mailings }}</div>
+                            <div class="stat-label">Всего рассылок</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number text-success">{{ stats.active_mailings }}</div>
+                            <div class="stat-label">Активных рассылок</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number text-info">{{ stats.total_attempts }}</div>
+                            <div class="stat-label">Всего отправок</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number text-success">{{ stats.success_attempts }}</div>
+                            <div class="stat-label">Успешных отправок</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number text-danger">{{ stats.failed_attempts }}</div>
+                            <div class="stat-label">Неуспешных отправок</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number text-warning">{{ stats.success_rate|floatformat:1 }}%</div>
+                            <div class="stat-label">Успешных доставок</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Топ рассылок -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Топ-5 рассылок по активности</h5>
+            </div>
+            <div class="card-body">
+                {% if top_mailings %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Рассылка</th>
+                                <th>Всего</th>
+                                <th>Успешно</th>
+                                <th>Ошибки</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mailing in top_mailings %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'mailing_detail' mailing.pk %}" class="text-decoration-none">
+                                        {{ mailing.title|truncatechars:30 }}
+                                    </a>
+                                </td>
+                                <td>{{ mailing.total_logs }}</td>
+                                <td class="text-success">{{ mailing.success_logs }}</td>
+                                <td class="text-danger">{{ mailing.failed_logs }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">Нет данных о рассылках</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по клиентам -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Топ-10 клиентов по активности</h5>
+            </div>
+            <div class="card-body">
+                {% if client_stats %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Email клиента</th>
+                                <th>Всего писем</th>
+                                <th>Успешно</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in client_stats %}
+                            <tr>
+                                <td class="text-truncate" style="max-width: 150px;" title="{{ client.client__email }}">
+                                    {{ client.client__email }}
+                                </td>
+                                <td>{{ client.total }}</td>
+                                <td class="text-success">{{ client.success }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">Нет данных по клиентам</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Детальная статистика по дням -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Статистика за последние 30 дней</h5>
+            </div>
+            <div class="card-body">
+                {% if daily_stats %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Всего отправок</th>
+                                <th>Успешно</th>
+                                <th>Ошибки</th>
+                                <th>Процент успеха</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in daily_stats %}
+                            <tr>
+                                <td>{{ day.date }}</td>
+                                <td>{{ day.total }}</td>
+                                <td class="text-success">{{ day.success }}</td>
+                                <td class="text-danger">{{ day.failed }}</td>
+                                <td>
+                                    {% if day.total > 0 %}
+                                        {{ day.success|floatformat:0 }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">Нет данных за последние 30 дней</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

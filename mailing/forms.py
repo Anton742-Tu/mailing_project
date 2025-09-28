@@ -52,18 +52,14 @@ class MessageForm(forms.ModelForm):
         """Валидация темы письма"""
         subject = self.cleaned_data.get("subject")
         if len(subject.strip()) < 5:
-            raise forms.ValidationError(
-                "Тема письма должна содержать не менее 5 символов"
-            )
+            raise forms.ValidationError("Тема письма должна содержать не менее 5 символов")
         return subject
 
     def clean_body(self):
         """Валидация тела письма"""
         body = self.cleaned_data.get("body")
         if len(body.strip()) < 10:
-            raise forms.ValidationError(
-                "Тело письма должно содержать не менее 10 символов"
-            )
+            raise forms.ValidationError("Тело письма должно содержать не менее 10 символов")
         return body
 
 

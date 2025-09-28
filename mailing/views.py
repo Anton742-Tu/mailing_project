@@ -1,7 +1,7 @@
+from datetime import timedelta
+
 from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.paginator import Paginator
@@ -10,7 +10,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_POST
+from django.utils import timezone
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -22,38 +22,6 @@ from django.views.generic import (
 
 from .forms import ClientForm, MailingForm, MessageForm
 from .models import Client, Mailing, MailingLog, Message
-from .services import send_mailing
-
-
-def register(request):
-    """Регистрация нового пользователя"""
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)  # автоматический вход после регистрации
-            return redirect('home')  # на главную страницу
-    else:
-        form = UserCreationForm()
-
-    return render(request, 'registration/register.html', {'form': form})
-
-
-class HomeView(LoginRequiredMixin, TemplateView):
-    template_name = "mailing/homepage.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-
-        # Статистика по заданию: рассылки, активные рассылки, уникальные клиенты
-        context["total_mailings"] = Mailing.objects.filter(owner=user).count()
-        context["active_mailings"] = Mailing.objects.filter(
-            owner=user, status="launched"
-        ).count()
-        context["unique_clients"] = Client.objects.filter(owner=user).count()
-
-        return context
 
 
 # Views для клиентов
@@ -65,10 +33,7 @@ def client_list(request):
     # Поиск по email или имени
     search_query = request.GET.get("search", "")
     if search_query:
-        clients = clients.filter(
-            models.Q(email__icontains=search_query)
-            | models.Q(full_name__icontains=search_query)
-        )
+        clients = clients.filter(models.Q(email__icontains=search_query) | models.Q(full_name__icontains=search_query))
 
     # Пагинация
     paginator = Paginator(clients, 10)
@@ -79,9 +44,7 @@ def client_list(request):
         "page_obj": page_obj,
         "search_query": search_query,
         "total_count": clients.count(),
-        "active_count": Client.objects.filter(
-            owner=request.user, is_active=True
-        ).count(),
+        "active_count": Client.objects.filter(owner=request.user, is_active=True).count(),
     }
     return render(request, "mailing/client_list.html", context)
 
@@ -95,7 +58,6 @@ def client_create(request):
             client = form.save(commit=False)
             client.owner = request.user
             client.save()
-            print(f"Создан клиент: {client.email}, owner: {client.owner}")  # отладка
             messages.success(request, f'Клиент "{client.email}" успешно создан!')
             return redirect("client_list")
         else:
@@ -158,16 +120,12 @@ def client_detail(request, pk):
 @login_required
 def message_list(request):
     """Список всех сообщений"""
-    # Сначала получаем базовый queryset
-    message_list = Message.objects.all().order_by("-created_at")
+    message_list = Message.objects.filter(owner=request.user).order_by("-created_at")
 
     # Поиск по теме или содержанию
     search_query = request.GET.get("search", "")
     if search_query:
-        message_list = message_list.filter(
-            Q(subject__icontains=search_query)
-            | Q(body__icontains=search_query)  # ← Используем Q вместо models.Q
-        )
+        message_list = message_list.filter(Q(subject__icontains=search_query) | Q(body__icontains=search_query))
 
     # Фильтр по активности
     is_active_filter = request.GET.get("is_active", "")
@@ -183,7 +141,7 @@ def message_list(request):
 
     # Вычисляем статистику
     total_count = message_list.count()
-    active_count = Message.objects.filter(is_active=True).count()
+    active_count = Message.objects.filter(owner=request.user, is_active=True).count()
     inactive_count = total_count - active_count
 
     context = {
@@ -229,9 +187,7 @@ def message_edit(request, pk):
         form = MessageForm(request.POST, instance=message)
         if form.is_valid():
             message = form.save()
-            messages.success(
-                request, f'Сообщение "{message.subject}" успешно обновлено!'
-            )
+            messages.success(request, f'Сообщение "{message.subject}" успешно обновлено!')
             return redirect("message_list")
         else:
             messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
@@ -266,6 +222,59 @@ def message_detail(request, pk):
     return render(request, "mailing/message_detail.html", {"message": message})
 
 
+# View для статистики
+@login_required
+def statistics_view(request):
+    """Страница со статистикой и отчетами"""
+    user = request.user
+
+    # Основная статистика
+    stats = Mailing.objects.get_user_statistics(user)
+
+    # Статистика по последним 30 дням
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+
+    daily_stats = (
+        MailingLog.objects.filter(mailing__owner=user, attempt_time__gte=thirty_days_ago)
+        .extra({"date": "date(attempt_time)"})
+        .values("date")
+        .annotate(
+            total=Count("id"),
+            success=Count("id", filter=Q(status="success")),
+            failed=Count("id", filter=Q(status="failed")),
+        )
+        .order_by("date")
+    )
+
+    # Топ 5 рассылок по количеству отправок
+    top_mailings = (
+        Mailing.objects.filter(owner=user)
+        .annotate(
+            total_logs=Count("mailinglog"),
+            success_logs=Count("mailinglog", filter=Q(mailinglog__status="success")),
+            failed_logs=Count("mailinglog", filter=Q(mailinglog__status="failed")),
+        )
+        .order_by("-total_logs")[:5]
+    )
+
+    # Статистика по клиентам
+    client_stats = (
+        MailingLog.objects.filter(mailing__owner=user)
+        .values("client__email")
+        .annotate(total=Count("id"), success=Count("id", filter=Q(status="success")))
+        .order_by("-total")[:10]
+    )
+
+    context = {
+        "stats": stats,
+        "daily_stats": list(daily_stats),
+        "top_mailings": top_mailings,
+        "client_stats": client_stats,
+    }
+
+    return render(request, "mailing/statistics.html", context)
+
+
 # View для аутентификации и главной страницы
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
@@ -274,6 +283,22 @@ class CustomLoginView(LoginView):
 
 class CustomLogoutView(LogoutView):
     next_page = "/"
+
+
+class HomeView(LoginRequiredMixin, TemplateView):
+    template_name = "mailing/homepage.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        # Статистика для главной страницы
+        context["client_count"] = Client.objects.filter(owner=user).count()
+        context["message_count"] = Message.objects.filter(owner=user).count()
+        context["mailing_count"] = Mailing.objects.filter(owner=user).count()
+        context["active_mailing_count"] = Mailing.objects.filter(owner=user, is_active=True).count()
+
+        return context
 
 
 # View для рассылок
@@ -338,26 +363,27 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
         context["success_count"] = success_count
         context["failed_count"] = failed_count
         context["total_count"] = total_count
-        context["success_rate"] = (
-            (success_count / total_count * 100) if total_count > 0 else 0
-        )
+        context["success_rate"] = (success_count / total_count * 100) if total_count > 0 else 0
 
         return context
 
 
+# View для ручной отправки рассылки
 @login_required
 def send_mailing_now(request, pk):
     """Ручная отправка рассылки через обычный запрос"""
     mailing = get_object_or_404(Mailing, pk=pk, owner=request.user)
 
     try:
+        from .services import send_mailing
+
         success, message = send_mailing(mailing.id)
         if success:
-            messages.success(request, f'Рассылка отправлена: {message}')
+            messages.success(request, f"Рассылка отправлена: {message}")
         else:
-            messages.error(request, f'Ошибка отправки: {message}')
+            messages.error(request, f"Ошибка отправки: {message}")
     except Exception as e:
-        messages.error(request, f'Ошибка: {str(e)}')
+        messages.error(request, f"Ошибка: {str(e)}")
 
     # Возвращаем на страницу рассылки
-    return redirect('mailing_detail', pk=pk)
+    return redirect("mailing_detail", pk=pk)
