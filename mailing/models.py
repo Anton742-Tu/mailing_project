@@ -20,6 +20,14 @@ class Client(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.email})"
 
+    def can_edit(self, user):
+        """Проверяет, может ли пользователь редактировать клиента"""
+        return user == self.owner or user.groups.filter(name="Менеджер").exists()
+
+    def can_delete(self, user):
+        """Проверяет, может ли пользователь удалить клиента"""
+        return user == self.owner
+
 
 class Message(models.Model):
     subject = models.CharField(max_length=200, verbose_name="Тема письма")
@@ -36,6 +44,14 @@ class Message(models.Model):
 
     def __str__(self):
         return self.subject
+
+    def can_edit(self, user):
+        """Проверяет, может ли пользователь редактировать сообщение"""
+        return user == self.owner or user.groups.filter(name="Менеджер").exists()
+
+    def can_delete(self, user):
+        """Проверяет, может ли пользователь удалить сообщение"""
+        return user == self.owner
 
 
 class Mailing(models.Model):
@@ -57,12 +73,7 @@ class Mailing(models.Model):
     clients = models.ManyToManyField("Client", verbose_name="Клиенты")
     start_time = models.DateTimeField(verbose_name="Время начала")
     end_time = models.DateTimeField(verbose_name="Время окончания")
-    period = models.CharField(
-        max_length=10,
-        choices=PERIOD_CHOICES,
-        default="once",
-        verbose_name="Периодичность",
-    )
+    period = models.CharField(max_length=10, choices=PERIOD_CHOICES, default="once", verbose_name="Периодичность")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="created", verbose_name="Статус")
     is_active = models.BooleanField(default=True, verbose_name="Активна")
     owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
@@ -106,6 +117,18 @@ class Mailing(models.Model):
             return (self.get_success_count() / total) * 100
         return 0
 
+    def can_edit(self, user):
+        """Проверяет, может ли пользователь редактировать рассылку"""
+        return user == self.owner or user.groups.filter(name="Менеджер").exists()
+
+    def can_delete(self, user):
+        """Проверяет, может ли пользователь удалить рассылку"""
+        return user == self.owner
+
+    def can_disable(self, user):
+        """Проверяет, может ли менеджер отключить рассылку"""
+        return user.groups.filter(name="Менеджер").exists()
+
 
 class MailingLog(models.Model):
     STATUS_CHOICES = [
@@ -129,38 +152,33 @@ class MailingLog(models.Model):
         return f"{self.mailing.title} - {self.client.email} ({self.status})"
 
 
-# Добавим менеджер для статистики
-class MailingManager(models.Manager):
-    def get_user_statistics(self, user):
-        """Статистика по всем рассылкам пользователя"""
-        user_mailings = self.filter(owner=user)
+# Статические методы для статистики (вместо менеджера)
+def get_user_statistics(user):
+    """Статистика по всем рассылкам пользователя"""
+    from django.db.models import Count, Q
 
-        total_mailings = user_mailings.count()
-        active_mailings = user_mailings.filter(is_active=True).count()
+    user_mailings = Mailing.objects.filter(owner=user)
 
-        # Статистика по логам
-        from django.db.models import Count, Q
+    total_mailings = user_mailings.count()
+    active_mailings = user_mailings.filter(is_active=True).count()
 
-        logs_stats = MailingLog.objects.filter(mailing__owner=user).aggregate(
-            total_attempts=Count("id"),
-            success_attempts=Count("id", filter=Q(status="success")),
-            failed_attempts=Count("id", filter=Q(status="failed")),
-        )
+    # Статистика по логам
+    logs_stats = MailingLog.objects.filter(mailing__owner=user).aggregate(
+        total_attempts=Count("id"),
+        success_attempts=Count("id", filter=Q(status="success")),
+        failed_attempts=Count("id", filter=Q(status="failed")),
+    )
 
-        return {
-            "total_mailings": total_mailings,
-            "active_mailings": active_mailings,
-            "completed_mailings": user_mailings.filter(status="completed").count(),
-            "total_attempts": logs_stats["total_attempts"] or 0,
-            "success_attempts": logs_stats["success_attempts"] or 0,
-            "failed_attempts": logs_stats["failed_attempts"] or 0,
-            "success_rate": (
-                (logs_stats["success_attempts"] / logs_stats["total_attempts"] * 100)
-                if logs_stats["total_attempts"] and logs_stats["total_attempts"] > 0
-                else 0
-            ),
-        }
-
-
-# Добавляем менеджер к модели
-Mailing.objects = MailingManager()
+    return {
+        "total_mailings": total_mailings,
+        "active_mailings": active_mailings,
+        "completed_mailings": user_mailings.filter(status="completed").count(),
+        "total_attempts": logs_stats["total_attempts"] or 0,
+        "success_attempts": logs_stats["success_attempts"] or 0,
+        "failed_attempts": logs_stats["failed_attempts"] or 0,
+        "success_rate": (
+            (logs_stats["success_attempts"] / logs_stats["total_attempts"] * 100)
+            if logs_stats["total_attempts"] and logs_stats["total_attempts"] > 0
+            else 0
+        ),
+    }

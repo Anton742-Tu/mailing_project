@@ -21,14 +21,24 @@ from django.views.generic import (
 )
 
 from .forms import ClientForm, MailingForm, MessageForm
-from .models import Client, Mailing, MailingLog, Message
+from .mixins import (
+    ManagerRequiredMixin,
+    OwnerOrManagerRequiredMixin,
+    OwnerRequiredMixin,
+)
+from .models import Client, Mailing, MailingLog, Message, get_user_statistics
 
 
 # Views для клиентов
 @login_required
 def client_list(request):
-    """Список всех клиентов"""
-    clients = Client.objects.filter(owner=request.user).order_by("-created_at")
+    """Список клиентов (с учетом роли)"""
+    if request.user.groups.filter(name="Менеджер").exists():
+        # Менеджер видит всех клиентов
+        clients = Client.objects.all().order_by("-created_at")
+    else:
+        # Пользователь видит только своих клиентов
+        clients = Client.objects.filter(owner=request.user).order_by("-created_at")
 
     # Поиск по email или имени
     search_query = request.GET.get("search", "")
@@ -47,6 +57,19 @@ def client_list(request):
         "active_count": Client.objects.filter(owner=request.user, is_active=True).count(),
     }
     return render(request, "mailing/client_list.html", context)
+
+
+class ClientUpdateView(OwnerRequiredMixin, UpdateView):  # ← Добавляем миксин
+    model = Client
+    form_class = ClientForm
+    template_name = "mailing/client_form.html"
+    success_url = reverse_lazy("client_list")
+
+
+class ClientDeleteView(OwnerRequiredMixin, DeleteView):  # ← Добавляем миксин
+    model = Client
+    template_name = "mailing/client_confirm_delete.html"
+    success_url = reverse_lazy("client_list")
 
 
 @login_required
@@ -119,8 +142,13 @@ def client_detail(request, pk):
 # Views для сообщений
 @login_required
 def message_list(request):
-    """Список всех сообщений"""
-    message_list = Message.objects.filter(owner=request.user).order_by("-created_at")
+    """Список сообщений (с учетом роли)"""
+    if request.user.groups.filter(name="Менеджер").exists():
+        # Менеджер видит все сообщения
+        message_list = Message.objects.all().order_by("-created_at")
+    else:
+        # Пользователь видит только свои сообщения
+        message_list = Message.objects.filter(owner=request.user).order_by("-created_at")
 
     # Поиск по теме или содержанию
     search_query = request.GET.get("search", "")
@@ -153,6 +181,19 @@ def message_list(request):
         "inactive_count": inactive_count,
     }
     return render(request, "mailing/message_list.html", context)
+
+
+class MessageUpdateView(OwnerRequiredMixin, UpdateView):  # ← Добавляем миксин
+    model = Message
+    form_class = MessageForm
+    template_name = "mailing/message_form.html"
+    success_url = reverse_lazy("message_list")
+
+
+class MessageDeleteView(OwnerRequiredMixin, DeleteView):  # ← Добавляем миксин
+    model = Message
+    template_name = "mailing/message_confirm_delete.html"
+    success_url = reverse_lazy("message_list")
 
 
 @login_required
@@ -229,7 +270,7 @@ def statistics_view(request):
     user = request.user
 
     # Основная статистика
-    stats = Mailing.objects.get_user_statistics(user)
+    stats = get_user_statistics(user)
 
     # Статистика по последним 30 дням
     thirty_days_ago = timezone.now() - timedelta(days=30)
@@ -308,7 +349,12 @@ class MailingListView(LoginRequiredMixin, ListView):
     template_name = "mailing/mailing_list.html"
 
     def get_queryset(self):
-        return Mailing.objects.filter(owner=self.request.user)
+        if self.request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер видит все рассылки
+            return Mailing.objects.all()
+        else:
+            # Пользователь видит только свои рассылки
+            return Mailing.objects.filter(owner=self.request.user)
 
 
 class MailingCreateView(LoginRequiredMixin, CreateView):
@@ -327,7 +373,7 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
         return kwargs
 
 
-class MailingUpdateView(LoginRequiredMixin, UpdateView):
+class MailingUpdateView(OwnerOrManagerRequiredMixin, UpdateView):  # ← Менеджер может редактировать
     model = Mailing
     form_class = MailingForm
     template_name = "mailing/mailing_form.html"
@@ -339,13 +385,13 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
         return kwargs
 
 
-class MailingDeleteView(LoginRequiredMixin, DeleteView):
+class MailingDeleteView(OwnerRequiredMixin, DeleteView):  # ← Только владелец может удалять
     model = Mailing
     template_name = "mailing/mailing_confirm_delete.html"
     success_url = reverse_lazy("mailing_list")
 
 
-class MailingDetailView(LoginRequiredMixin, DetailView):
+class MailingDetailView(OwnerOrManagerRequiredMixin, DetailView):  # ← Менеджер может просматривать
     model = Mailing
     template_name = "mailing/mailing_detail.html"
 
@@ -387,3 +433,74 @@ def send_mailing_now(request, pk):
 
     # Возвращаем на страницу рассылки
     return redirect("mailing_detail", pk=pk)
+
+
+# View для менеджеров
+@login_required
+def manager_dashboard(request):
+    """Дашборд менеджера"""
+    if not request.user.groups.filter(name="Менеджер").exists():
+        messages.error(request, "Доступно только менеджерам.")
+        return redirect("home")
+
+    # Статистика для менеджера
+    total_users = User.objects.count()
+    total_mailings = Mailing.objects.count()
+    active_mailings = Mailing.objects.filter(is_active=True).count()
+    total_clients = Client.objects.count()
+
+    # Последние рассылки
+    recent_mailings = Mailing.objects.all().order_by("-created_at")[:5]
+
+    # Пользователи для блокировки
+    users = User.objects.all().order_by("-date_joined")
+
+    context = {
+        "total_users": total_users,
+        "total_mailings": total_mailings,
+        "active_mailings": active_mailings,
+        "total_clients": total_clients,
+        "recent_mailings": recent_mailings,
+        "users": users,
+    }
+
+    return render(request, "mailing/manager_dashboard.html", context)
+
+
+@login_required
+def toggle_user_active(request, user_id):
+    """Блокировка/разблокировка пользователя"""
+    if not request.user.groups.filter(name="Менеджер").exists():
+        messages.error(request, "Доступно только менеджерам.")
+        return redirect("home")
+
+    user = get_object_or_404(User, id=user_id)
+
+    if user == request.user:
+        messages.error(request, "Вы не можете заблокировать себя.")
+        return redirect("manager_dashboard")
+
+    user.is_active = not user.is_active
+    user.save()
+
+    action = "разблокирован" if user.is_active else "заблокирован"
+    messages.success(request, f"Пользователь {user.username} {action}.")
+
+    return redirect("manager_dashboard")
+
+
+@login_required
+def toggle_mailing_active(request, mailing_id):
+    """Включение/отключение рассылки"""
+    if not request.user.groups.filter(name="Менеджер").exists():
+        messages.error(request, "Доступно только менеджерам.")
+        return redirect("home")
+
+    mailing = get_object_or_404(Mailing, id=mailing_id)
+    mailing.is_active = not mailing.is_active
+    mailing.save()
+
+    action = "включена" if mailing.is_active else "отключена"
+    messages.success(request, f"Рассылка '{mailing.title}' {action}.")
+
+    return redirect("manager_dashboard")

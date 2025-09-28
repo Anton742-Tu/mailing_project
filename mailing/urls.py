@@ -15,6 +15,7 @@ from .views import (
     client_detail,
     client_edit,
     client_list,
+    manager_dashboard,
     message_create,
     message_delete,
     message_detail,
@@ -22,6 +23,8 @@ from .views import (
     message_list,
     send_mailing_now,
     statistics_view,
+    toggle_mailing_active,
+    toggle_user_active,
 )
 
 urlpatterns = [
@@ -51,4 +54,8 @@ urlpatterns = [
     path("mailings/<int:pk>/send-now/", send_mailing_now, name="mailing_send_now"),
     # Статистика
     path("statistics/", statistics_view, name="statistics"),
+    # URLs для менеджеров
+    path("manager/", manager_dashboard, name="manager_dashboard"),
+    path("manager/user/<int:user_id>/toggle/", toggle_user_active, name="toggle_user_active"),
+    path("manager/mailing/<int:mailing_id>/toggle/", toggle_mailing_active, name="toggle_mailing_active"),
 ]
