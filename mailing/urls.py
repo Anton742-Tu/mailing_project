@@ -53,5 +53,5 @@ urlpatterns = [
         "mailings/<int:pk>/delete/", MailingDeleteView.as_view(), name="mailing_delete"
     ),
     # Ручная отправка рассылки
-    path("mailings/<int:pk>/send-now/", send_mailing_now, name="mailing_send_now"),
+    path('mailings/<int:pk>/send-now/', send_mailing_now, name='mailing_send_now'),
 ]

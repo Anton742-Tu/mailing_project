@@ -346,17 +346,18 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
 
 
 @login_required
-@require_POST
 def send_mailing_now(request, pk):
-    """Ручная отправка рассылки через интерфейс"""
+    """Ручная отправка рассылки через обычный запрос"""
     mailing = get_object_or_404(Mailing, pk=pk, owner=request.user)
-
-    # Дополнительная проверка владельца
-    if mailing.owner != request.user:
-        return JsonResponse({"success": False, "message": "Доступ запрещен"})
 
     try:
         success, message = send_mailing(mailing.id)
-        return JsonResponse({"success": success, "message": message})
+        if success:
+            messages.success(request, f'Рассылка отправлена: {message}')
+        else:
+            messages.error(request, f'Ошибка отправки: {message}')
     except Exception as e:
-        return JsonResponse({"success": False, "message": f"Ошибка: {str(e)}"})
+        messages.error(request, f'Ошибка: {str(e)}')
+
+    # Возвращаем на страницу рассылки
+    return redirect('mailing_detail', pk=pk)

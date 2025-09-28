@@ -10,6 +10,15 @@ body {
     font-weight: 600;
 }
 
+.navbar-nav .d-flex {
+    gap: 15px;
+}
+
+.navbar-nav .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
 .navbar-dark {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
