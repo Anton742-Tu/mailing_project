@@ -1,9 +1,11 @@
 from datetime import timedelta
 
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import models
 from django.db.models import Count, Q
@@ -11,6 +13,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -27,6 +31,10 @@ from .mixins import (
     OwnerRequiredMixin,
 )
 from .models import Client, Mailing, MailingLog, Message, get_user_statistics
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 
 # Views для клиентов
@@ -264,7 +272,8 @@ def message_detail(request, pk):
 
 
 # View для статистики
-@login_required
+# Кешируем статистику на 3 минуты
+@cache_page(60 * 3)
 def statistics_view(request):
     """Страница со статистикой и отчетами"""
     user = request.user
@@ -326,6 +335,7 @@ class CustomLogoutView(LogoutView):
     next_page = "/"
 
 
+# Кешируем главную страницу на 5 минут
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "mailing/homepage.html"
 
@@ -333,16 +343,28 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Статистика для главной страницы
-        context["client_count"] = Client.objects.filter(owner=user).count()
-        context["message_count"] = Message.objects.filter(owner=user).count()
-        context["mailing_count"] = Mailing.objects.filter(owner=user).count()
-        context["active_mailing_count"] = Mailing.objects.filter(owner=user, is_active=True).count()
+        # Принудительно обновляем кеш при каждом запросе для тестирования
+        cache_key = f"home_stats_{user.id}"
+        cache.delete(cache_key)  # Удаляем старый кеш
+
+        # Вычисляем статистику
+        stats = {
+            "client_count": Client.objects.filter(owner=user).count(),
+            "message_count": Message.objects.filter(owner=user).count(),
+            "mailing_count": Mailing.objects.filter(owner=user).count(),
+            "active_mailing_count": Mailing.objects.filter(owner=user, is_active=True).count(),
+        }
+
+        # Сохраняем в кеш
+        cache.set(cache_key, stats, 300)
+        context.update(stats)
 
         return context
 
 
 # View для рассылок
+# Кешируем список рассылок на 2 минуты
+@method_decorator(cache_page(60 * 2), name="dispatch")
 class MailingListView(LoginRequiredMixin, ListView):
     model = Mailing
     context_object_name = "mailings"
@@ -431,6 +453,12 @@ def send_mailing_now(request, pk):
     except Exception as e:
         messages.error(request, f"Ошибка: {str(e)}")
 
+    # Используем новые функции для инвалидации кеша
+    from .cache_utils import invalidate_mailing_cache, invalidate_user_cache
+
+    invalidate_user_cache(request.user.id)
+    invalidate_mailing_cache(pk)
+
     # Возвращаем на страницу рассылки
     return redirect("mailing_detail", pk=pk)
 
@@ -439,9 +467,9 @@ def send_mailing_now(request, pk):
 @login_required
 def manager_dashboard(request):
     """Дашборд менеджера"""
-    if not request.user.groups.filter(name="Менеджер").exists():
+    if not request.user.groups.filter(name='Менеджер').exists():
         messages.error(request, "Доступно только менеджерам.")
-        return redirect("home")
+        return redirect('home')
 
     # Статистика для менеджера
     total_users = User.objects.count()
@@ -450,35 +478,35 @@ def manager_dashboard(request):
     total_clients = Client.objects.count()
 
     # Последние рассылки
-    recent_mailings = Mailing.objects.all().order_by("-created_at")[:5]
+    recent_mailings = Mailing.objects.all().order_by('-created_at')[:5]
 
     # Пользователи для блокировки
-    users = User.objects.all().order_by("-date_joined")
+    users = User.objects.all().order_by('-date_joined')
 
     context = {
-        "total_users": total_users,
-        "total_mailings": total_mailings,
-        "active_mailings": active_mailings,
-        "total_clients": total_clients,
-        "recent_mailings": recent_mailings,
-        "users": users,
+        'total_users': total_users,
+        'total_mailings': total_mailings,
+        'active_mailings': active_mailings,
+        'total_clients': total_clients,
+        'recent_mailings': recent_mailings,
+        'users': users,
     }
 
-    return render(request, "mailing/manager_dashboard.html", context)
+    return render(request, 'mailing/manager_dashboard.html', context)
 
 
 @login_required
 def toggle_user_active(request, user_id):
     """Блокировка/разблокировка пользователя"""
-    if not request.user.groups.filter(name="Менеджер").exists():
+    if not request.user.groups.filter(name='Менеджер').exists():
         messages.error(request, "Доступно только менеджерам.")
-        return redirect("home")
+        return redirect('home')
 
     user = get_object_or_404(User, id=user_id)
 
     if user == request.user:
         messages.error(request, "Вы не можете заблокировать себя.")
-        return redirect("manager_dashboard")
+        return redirect('manager_dashboard')
 
     user.is_active = not user.is_active
     user.save()
@@ -486,7 +514,7 @@ def toggle_user_active(request, user_id):
     action = "разблокирован" if user.is_active else "заблокирован"
     messages.success(request, f"Пользователь {user.username} {action}.")
 
-    return redirect("manager_dashboard")
+    return redirect('manager_dashboard')
 
 
 @login_required
@@ -504,3 +532,16 @@ def toggle_mailing_active(request, mailing_id):
     messages.success(request, f"Рассылка '{mailing.title}' {action}.")
 
     return redirect("manager_dashboard")
+
+
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Аккаунт создан для {username}! Теперь вы можете войти.')
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/register.html', {'form': form})

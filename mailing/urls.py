@@ -1,5 +1,6 @@
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
+from . import views
 
 from .views import (
     CustomLoginView,
@@ -33,6 +34,7 @@ urlpatterns = [
     # Аутентификация
     path("login/", CustomLoginView.as_view(), name="login"),
     path("logout/", CustomLogoutView.as_view(), name="logout"),
+    path('register/', views.register, name='register'),
     # Клиенты
     path("clients/", client_list, name="client_list"),
     path("clients/create/", client_create, name="client_create"),

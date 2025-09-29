@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -41,7 +42,31 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    # Кеширование для локалей
+    "django.middleware.locale.LocaleMiddleware",
+    # Общее кеширование
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Кеширование всего сайта (осторожно - для статических страниц)
+    # 'django.middleware.cache.FetchFromCacheMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "mailing.middleware.CacheControlMiddleware",
 ]
+
+# Для каких URL не использовать кеширование
+CACHE_MIDDLEWARE_EXCLUDED_URLS = [
+    r"^admin/",
+    r"^login/",
+    r"^logout/",
+    r"^register/",
+    r"^manager/",
+]
+
 
 ROOT_URLCONF = "mailing_system.urls"
 
@@ -123,6 +148,53 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")  # Пароль пр�
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
+
+# Кеширование
+# Простые настройки кеширования для разработки
+
+CELERY_BROKER_URL = 'redis://localhost:6380/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6380/0'
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6380/1',
+    }
+}
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Europe/Moscow'
+CELERY_BEAT_SCHEDULE = {
+    'check-mailings-every-minute': {
+        'task': 'mailing.tasks.check_pending_mailings',
+        'schedule': crontab(minute='*'),  # Каждую минуту
+    },
+}
+
+# ВРЕМЕННО для тестирования - задачи выполняются сразу без Celery
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Если Redis не установлен, используем файловое кеширование
+try:
+    import redis
+
+    # Проверим подключение к Redis
+    r = redis.Redis(host="127.0.0.1", port=6379, db=1)
+    r.ping()
+    CACHE_BACKEND = "default"
+    print("✅ Redis подключен успешно")
+except (ImportError, redis.ConnectionError):
+    CACHE_BACKEND = "file"
+    CACHES["default"] = CACHES["file"]
+    print("⚠️  Redis не доступен, используем файловый кеш")
+
+# Время жизни кеша по умолчанию (в секундах)
+CACHE_MIDDLEWARE_SECONDS = 60 * 15  # 15 минут
+
+# Ключевой префикс для кеша
+CACHE_MIDDLEWARE_KEY_PREFIX = "mailing_system"
 
 # Security settings for production
 if not DEBUG:

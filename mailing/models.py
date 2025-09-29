@@ -1,6 +1,9 @@
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
+
+from .cache_utils import cache_model_method, get_cached_or_execute
 
 
 class Client(models.Model):
@@ -129,6 +132,21 @@ class Mailing(models.Model):
         """Проверяет, может ли менеджер отключить рассылку"""
         return user.groups.filter(name="Менеджер").exists()
 
+    @cache_model_method(timeout=60 * 10)  # Кешируем на 10 минут
+    def get_success_count(self):
+        """Количество успешных отправок для этой рассылки"""
+        return self.mailinglog_set.filter(status="success").count()
+
+    @cache_model_method(timeout=60 * 10)
+    def get_failed_count(self):
+        """Количество неуспешных отправок для этой рассылки"""
+        return self.mailinglog_set.filter(status="failed").count()
+
+    @cache_model_method(timeout=60 * 10)
+    def get_total_attempts(self):
+        """Общее количество попыток отправки"""
+        return self.mailinglog_set.count()
+
 
 class MailingLog(models.Model):
     STATUS_CHOICES = [
@@ -152,9 +170,27 @@ class MailingLog(models.Model):
         return f"{self.mailing.title} - {self.client.email} ({self.status})"
 
 
-# Статические методы для статистики (вместо менеджера)
+# Статические методы для статистики
 def get_user_statistics(user):
-    """Статистика по всем рассылкам пользователя"""
+    """Статистика по всем рассылкам пользователя с простым кешированием"""
+    cache_key = f"user_stats_{user.id}"
+
+    # Пробуем получить из кеша
+    cached_stats = cache.get(cache_key)
+    if cached_stats is not None:
+        return cached_stats
+
+    # Если нет в кеше - вычисляем
+    stats = _calculate_user_statistics(user)
+
+    # Сохраняем в кеш на 5 минут
+    cache.set(cache_key, stats, 300)
+
+    return stats
+
+
+def _calculate_user_statistics(user):
+    """Внутренняя функция для расчета статистики"""
     from django.db.models import Count, Q
 
     user_mailings = Mailing.objects.filter(owner=user)
