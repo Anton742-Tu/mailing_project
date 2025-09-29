@@ -59,16 +59,6 @@ MIDDLEWARE = [
     "mailing.middleware.CacheControlMiddleware",
 ]
 
-# Для каких URL не использовать кеширование
-CACHE_MIDDLEWARE_EXCLUDED_URLS = [
-    r"^admin/",
-    r"^login/",
-    r"^logout/",
-    r"^register/",
-    r"^manager/",
-]
-
-
 ROOT_URLCONF = "mailing_system.urls"
 
 TEMPLATES = [
@@ -151,10 +141,6 @@ LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 
 # Кеширование
-# Простые настройки кеширования для разработки
-
-CELERY_BROKER_URL = "redis://localhost:6380/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6380/0"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -162,12 +148,20 @@ CACHES = {
     }
 }
 
-#CELERY_BEAT_SCHEDULE = {
-#     'check-mailings-every-minute': {
-#         'task': 'mailing.tasks.check_pending_mailings',
-#         'schedule': crontab(minute='*'),
-#     },
-# }
+# Время жизни кеша по умолчанию (в секундах)
+CACHE_MIDDLEWARE_SECONDS = 60 * 15  # 15 минут
+
+# Ключевой префикс для кеша
+CACHE_MIDDLEWARE_KEY_PREFIX = "mailing_system"
+
+# Для каких URL не использовать кеширование
+CACHE_MIDDLEWARE_EXCLUDED_URLS = [
+    r"^admin/",
+    r"^login/",
+    r"^logout/",
+    r"^register/",
+    r"^manager/",
+]
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -191,12 +185,6 @@ except (ImportError, redis.ConnectionError):
     CACHE_BACKEND = "file"
     CACHES["default"] = CACHES["file"]
     print("⚠️  Redis не доступен, используем файловый кеш")
-
-# Время жизни кеша по умолчанию (в секундах)
-CACHE_MIDDLEWARE_SECONDS = 60 * 15  # 15 минут
-
-# Ключевой префикс для кеша
-CACHE_MIDDLEWARE_KEY_PREFIX = "mailing_system"
 
 # Security settings for production
 if not DEBUG:
