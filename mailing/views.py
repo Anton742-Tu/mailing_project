@@ -1,9 +1,10 @@
 from datetime import timedelta
 
-from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.cache import cache
 from django.core.paginator import Paginator
@@ -31,10 +32,6 @@ from .mixins import (
     OwnerRequiredMixin,
 )
 from .models import Client, Mailing, MailingLog, Message, get_user_statistics
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 
 
 # Views для клиентов
@@ -467,9 +464,9 @@ def send_mailing_now(request, pk):
 @login_required
 def manager_dashboard(request):
     """Дашборд менеджера"""
-    if not request.user.groups.filter(name='Менеджер').exists():
+    if not request.user.groups.filter(name="Менеджер").exists():
         messages.error(request, "Доступно только менеджерам.")
-        return redirect('home')
+        return redirect("home")
 
     # Статистика для менеджера
     total_users = User.objects.count()
@@ -478,35 +475,35 @@ def manager_dashboard(request):
     total_clients = Client.objects.count()
 
     # Последние рассылки
-    recent_mailings = Mailing.objects.all().order_by('-created_at')[:5]
+    recent_mailings = Mailing.objects.all().order_by("-created_at")[:5]
 
     # Пользователи для блокировки
-    users = User.objects.all().order_by('-date_joined')
+    users = User.objects.all().order_by("-date_joined")
 
     context = {
-        'total_users': total_users,
-        'total_mailings': total_mailings,
-        'active_mailings': active_mailings,
-        'total_clients': total_clients,
-        'recent_mailings': recent_mailings,
-        'users': users,
+        "total_users": total_users,
+        "total_mailings": total_mailings,
+        "active_mailings": active_mailings,
+        "total_clients": total_clients,
+        "recent_mailings": recent_mailings,
+        "users": users,
     }
 
-    return render(request, 'mailing/manager_dashboard.html', context)
+    return render(request, "mailing/manager_dashboard.html", context)
 
 
 @login_required
 def toggle_user_active(request, user_id):
     """Блокировка/разблокировка пользователя"""
-    if not request.user.groups.filter(name='Менеджер').exists():
+    if not request.user.groups.filter(name="Менеджер").exists():
         messages.error(request, "Доступно только менеджерам.")
-        return redirect('home')
+        return redirect("home")
 
     user = get_object_or_404(User, id=user_id)
 
     if user == request.user:
         messages.error(request, "Вы не можете заблокировать себя.")
-        return redirect('manager_dashboard')
+        return redirect("manager_dashboard")
 
     user.is_active = not user.is_active
     user.save()
@@ -514,7 +511,7 @@ def toggle_user_active(request, user_id):
     action = "разблокирован" if user.is_active else "заблокирован"
     messages.success(request, f"Пользователь {user.username} {action}.")
 
-    return redirect('manager_dashboard')
+    return redirect("manager_dashboard")
 
 
 @login_required
@@ -535,13 +532,13 @@ def toggle_mailing_active(request, mailing_id):
 
 
 def register(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Аккаунт создан для {username}! Теперь вы можете войти.')
-            return redirect('login')
+            username = form.cleaned_data.get("username")
+            messages.success(request, f"Аккаунт создан для {username}! Теперь вы можете войти.")
+            return redirect("login")
     else:
         form = UserCreationForm()
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, "registration/register.html", {"form": form})

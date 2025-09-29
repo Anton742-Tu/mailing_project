@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from celery.schedules import crontab
+
+#from celery.schedules import crontab
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -152,27 +153,28 @@ LOGOUT_REDIRECT_URL = "home"
 # Кеширование
 # Простые настройки кеширования для разработки
 
-CELERY_BROKER_URL = 'redis://localhost:6380/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6380/0'
+CELERY_BROKER_URL = "redis://localhost:6380/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6380/0"
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6380/1',
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6380/1",
     }
 }
 
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Europe/Moscow'
-CELERY_BEAT_SCHEDULE = {
-    'check-mailings-every-minute': {
-        'task': 'mailing.tasks.check_pending_mailings',
-        'schedule': crontab(minute='*'),  # Каждую минуту
-    },
-}
+#CELERY_BEAT_SCHEDULE = {
+#     'check-mailings-every-minute': {
+#         'task': 'mailing.tasks.check_pending_mailings',
+#         'schedule': crontab(minute='*'),
+#     },
+# }
 
-# ВРЕМЕННО для тестирования - задачи выполняются сразу без Celery
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Europe/Moscow"
+
+# ВРЕМЕННОЕ РЕШЕНИЕ - отключить Celery
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 

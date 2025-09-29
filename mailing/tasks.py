@@ -1,11 +1,8 @@
-from celery import shared_task
-from django.core.mail import send_mail
 from django.conf import settings
-from .models import Mailing, MailingLog
+from django.core.mail import send_mail
 
 from celery import shared_task
-from django.core.mail import send_mail
-from django.conf import settings
+
 from .models import Mailing, MailingLog
 
 
@@ -24,7 +21,7 @@ def send_mailing_task(mailing_id):
         for client in mailing.clients.all():
             try:
                 # Получаем тему и тело сообщения
-                if hasattr(mailing, 'message') and mailing.message:
+                if hasattr(mailing, "message") and mailing.message:
                     subject = mailing.message.subject
                     body = mailing.message.body
                 else:
@@ -43,10 +40,7 @@ def send_mailing_task(mailing_id):
 
                 # Логируем успех с правильным полем server_response
                 MailingLog.objects.create(
-                    mailing=mailing,
-                    client=client,
-                    status='success',
-                    server_response='Email отправлен успешно'
+                    mailing=mailing, client=client, status="success", server_response="Email отправлен успешно"
                 )
                 success_count += 1
                 print(f"✅ Успешно: {client.email}")
@@ -56,15 +50,15 @@ def send_mailing_task(mailing_id):
                 MailingLog.objects.create(
                     mailing=mailing,
                     client=client,
-                    status='failed',
-                    server_response='Ошибка отправки',
-                    error_message=str(e)
+                    status="failed",
+                    server_response="Ошибка отправки",
+                    error_message=str(e),
                 )
                 error_count += 1
                 print(f"❌ Ошибка для {client.email}: {e}")
 
         # Обновляем статус рассылки
-        mailing.status = 'completed'
+        mailing.status = "completed"
         mailing.save()
 
         result = f"Рассылка '{mailing.title}' завершена. Успешно: {success_count}, Ошибок: {error_count}"
@@ -87,21 +81,20 @@ def check_pending_mailings():
     Проверяет pending рассылки и запускает их отправку
     """
     from django.utils import timezone
+
     from .models import Mailing
 
     now = timezone.now()
     print(f"⏰ Проверка рассылок в: {now}")
 
     # Ищем рассылки которые должны запуститься
-    pending_mailings = Mailing.objects.filter(
-        start_time__lte=now
-    ).exclude(status__in=['completed', 'running'])
+    pending_mailings = Mailing.objects.filter(start_time__lte=now).exclude(status__in=["completed", "running"])
 
     print(f"📋 Найдено рассылок для проверки: {pending_mailings.count()}")
 
     for mailing in pending_mailings:
         print(f"🎯 Рассылка для запуска: {mailing.title} (старт: {mailing.start_time}, статус: {mailing.status})")
-        mailing.status = 'running'
+        mailing.status = "running"
         mailing.save()
         send_mailing_task.delay(mailing.id)
         print(f"🚀 Запущена рассылка: {mailing.title}")
