@@ -14,6 +14,7 @@ def cache_page(timeout=300):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             # Генерируем ключ кеша
+            global pickle
             user_id = request.user.id if request.user.is_authenticated else "anonymous"
             cache_key = f"view_{view_func.__name__}_{request.path}_{user_id}"
 

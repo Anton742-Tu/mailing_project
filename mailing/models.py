@@ -57,6 +57,11 @@ class Message(models.Model):
         return user == self.owner
 
 
+def can_disable(user):
+    """Проверяет, может ли менеджер отключить рассылку"""
+    return user.groups.filter(name="Менеджер").exists()
+
+
 class Mailing(models.Model):
     STATUS_CHOICES = [
         ("created", "Создана"),
@@ -127,10 +132,6 @@ class Mailing(models.Model):
     def can_delete(self, user):
         """Проверяет, может ли пользователь удалить рассылку"""
         return user == self.owner
-
-    def can_disable(self, user):
-        """Проверяет, может ли менеджер отключить рассылку"""
-        return user.groups.filter(name="Менеджер").exists()
 
     @cache_model_method(timeout=60 * 10)  # Кешируем на 10 минут
     def get_success_count(self):

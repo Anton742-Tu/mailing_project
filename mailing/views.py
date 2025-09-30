@@ -227,94 +227,136 @@ def message_create(request):
 @login_required
 def message_edit(request, pk):
     """Редактирование сообщения"""
-    message = get_object_or_404(Message, pk=pk, owner=request.user)
-
-    if request.method == "POST":
-        form = MessageForm(request.POST, instance=message)
-        if form.is_valid():
-            message = form.save()
-            messages.success(request, f'Сообщение "{message.subject}" успешно обновлено!')
-            return redirect("message_list")
+    try:
+        if request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер может редактировать все сообщения
+            message = Message.objects.get(pk=pk)
         else:
-            messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
-    else:
-        form = MessageForm(instance=message)
+            # Пользователь редактирует только свои сообщения
+            message = Message.objects.get(pk=pk, owner=request.user)
 
-    return render(
-        request,
-        "mailing/message_form.html",
-        {"form": form, "title": "Редактировать сообщение", "message": message},
-    )
+        if request.method == "POST":
+            form = MessageForm(request.POST, instance=message)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Сообщение "{message.subject}" успешно обновлено!')
+                return redirect("message_list")
+            else:
+                messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
+        else:
+            form = MessageForm(instance=message)
+
+        return render(
+            request,
+            "mailing/message_form.html",
+            {"form": form, "title": "Редактировать сообщение", "message": message},
+        )
+
+    except Message.DoesNotExist:
+        messages.error(request, "Сообщение не найдено или у вас нет прав для редактирования.")
+        return redirect("message_list")
 
 
 @login_required
 def message_delete(request, pk):
     """Удаление сообщения"""
-    message = get_object_or_404(Message, pk=pk, owner=request.user)
+    try:
+        if request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер может удалять все сообщения
+            message = Message.objects.get(pk=pk)
+        else:
+            # Пользователь удаляет только свои сообщения
+            message = Message.objects.get(pk=pk, owner=request.user)
 
-    if request.method == "POST":
-        message_subject = message.subject
-        message.delete()
-        messages.success(request, f'Сообщение "{message_subject}" успешно удалено!')
+        if request.method == "POST":
+            message_subject = message.subject
+            message.delete()
+            messages.success(request, f'Сообщение "{message_subject}" успешно удалено!')
+            return redirect("message_list")
+
+        return render(request, "mailing/message_confirm_delete.html", {"message": message})
+
+    except Message.DoesNotExist:
+        messages.error(request, "Сообщение не найдено или у вас нет прав для удаления.")
         return redirect("message_list")
-
-    return render(request, "mailing/message_confirm_delete.html", {"message": message})
 
 
 @login_required
 def message_detail(request, pk):
     """Просмотр деталей сообщения"""
-    message = get_object_or_404(Message, pk=pk, owner=request.user)
-    return render(request, "mailing/message_detail.html", {"message": message})
+    try:
+        if request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер может видеть все сообщения
+            message = Message.objects.get(pk=pk)
+        else:
+            # Пользователь видит только свои сообщения
+            message = Message.objects.get(pk=pk, owner=request.user)
 
+        return render(request, "mailing/message_detail.html", {"message": message})
+
+    except Message.DoesNotExist:
+        messages.error(request, "Сообщение не найдено или у вас нет доступа.")
+        return redirect("message_list")
 
 # View для статистики
 # Кешируем статистику на 3 минуты
-@cache_page(60 * 3)
 def statistics_view(request):
     """Страница со статистикой и отчетами"""
     user = request.user
 
-    # Основная статистика
-    stats = get_user_statistics(user)
+    # РАЗДЕЛЕНИЕ ПО РОЛЯМ
+    if user.groups.filter(name="Менеджер").exists():
+        # МЕНЕДЖЕР видит статистику по ВСЕЙ системе
+        stats = {
+            "total_mailings": Mailing.objects.count(),
+            "active_mailings": Mailing.objects.filter(is_active=True).count(),
+            "total_logs": MailingLog.objects.count(),
+            "success_logs": MailingLog.objects.filter(status="success").count(),
+            "failed_logs": MailingLog.objects.filter(status="failed").count(),
+        }
 
-    # Статистика по последним 30 дням
-    thirty_days_ago = timezone.now() - timedelta(days=30)
-
-    daily_stats = (
-        MailingLog.objects.filter(mailing__owner=user, attempt_time__gte=thirty_days_ago)
-        .extra({"date": "date(attempt_time)"})
-        .values("date")
-        .annotate(
-            total=Count("id"),
-            success=Count("id", filter=Q(status="success")),
-            failed=Count("id", filter=Q(status="failed")),
+        # Топ 5 рассылок по количеству отправок (ВСЕ рассылки)
+        top_mailings = (
+            Mailing.objects.all()
+            .annotate(
+                total_logs=Count("mailinglog"),
+                success_logs=Count("mailinglog", filter=Q(mailinglog__status="success")),
+            )
+            .order_by("-total_logs")[:5]
         )
-        .order_by("date")
-    )
 
-    # Топ 5 рассылок по количеству отправок
-    top_mailings = (
-        Mailing.objects.filter(owner=user)
-        .annotate(
-            total_logs=Count("mailinglog"),
-            success_logs=Count("mailinglog", filter=Q(mailinglog__status="success")),
-            failed_logs=Count("mailinglog", filter=Q(mailinglog__status="failed")),
+        # Статистика по клиентам (ВСЕ клиенты)
+        client_stats = (
+            MailingLog.objects.all()
+            .values("client__email")
+            .annotate(total=Count("id"), success=Count("id", filter=Q(status="success")))
+            .order_by("-total")[:10]
         )
-        .order_by("-total_logs")[:5]
-    )
 
-    # Статистика по клиентам
-    client_stats = (
-        MailingLog.objects.filter(mailing__owner=user)
-        .values("client__email")
-        .annotate(total=Count("id"), success=Count("id", filter=Q(status="success")))
-        .order_by("-total")[:10]
-    )
+    else:
+        # ОБЫЧНЫЙ ПОЛЬЗОВАТЕЛЬ видит только свою статистику
+        stats = get_user_statistics(user)
+
+        # Топ 5 рассылок пользователя
+        top_mailings = (
+            Mailing.objects.filter(owner=user)
+            .annotate(
+                total_logs=Count("mailinglog"),
+                success_logs=Count("mailinglog", filter=Q(mailinglog__status="success")),
+            )
+            .order_by("-total_logs")[:5]
+        )
+
+        # Статистика по клиентам пользователя
+        client_stats = (
+            MailingLog.objects.filter(mailing__owner=user)
+            .values("client__email")
+            .annotate(total=Count("id"), success=Count("id", filter=Q(status="success")))
+            .order_by("-total")[:10]
+        )
 
     context = {
         "stats": stats,
-        "daily_stats": list(daily_stats),
         "top_mailings": top_mailings,
         "client_stats": client_stats,
     }
@@ -340,22 +382,25 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Принудительно обновляем кеш при каждом запросе для тестирования
-        cache_key = f"home_stats_{user.id}"
-        cache.delete(cache_key)  # Удаляем старый кеш
+        # РАЗДЕЛЕНИЕ ПО РОЛЯМ
+        if user.groups.filter(name="Менеджер").exists():
+            # МЕНЕДЖЕР видит ВСЕ данные
+            stats = {
+                "client_count": Client.objects.count(),
+                "message_count": Message.objects.count(),
+                "mailing_count": Mailing.objects.count(),
+                "active_mailing_count": Mailing.objects.filter(is_active=True).count(),
+            }
+        else:
+            # ОБЫЧНЫЙ ПОЛЬЗОВАТЕЛЬ видит только свои данные
+            stats = {
+                "client_count": Client.objects.filter(owner=user).count(),
+                "message_count": Message.objects.filter(owner=user).count(),
+                "mailing_count": Mailing.objects.filter(owner=user).count(),
+                "active_mailing_count": Mailing.objects.filter(owner=user, is_active=True).count(),
+            }
 
-        # Вычисляем статистику
-        stats = {
-            "client_count": Client.objects.filter(owner=user).count(),
-            "message_count": Message.objects.filter(owner=user).count(),
-            "mailing_count": Mailing.objects.filter(owner=user).count(),
-            "active_mailing_count": Mailing.objects.filter(owner=user, is_active=True).count(),
-        }
-
-        # Сохраняем в кеш
-        cache.set(cache_key, stats, 300)
         context.update(stats)
-
         return context
 
 

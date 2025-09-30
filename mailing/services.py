@@ -11,6 +11,39 @@ from .models import Mailing, MailingLog
 logger = logging.getLogger(__name__)
 
 
+def send_email(client_email, subject, body):
+    """Отправка email"""
+    try:
+        # Для тестирования - эмулируем отправку
+        logger.info(f"📧 Эмуляция отправки email на {client_email}")
+
+        # В реальном режиме раскомментируйте:
+        """
+        msg = MimeMultipart()
+        msg['From'] = self.smtp_username
+        msg['To'] = client_email
+        msg['Subject'] = subject
+        msg.attach(MimeText(body, 'plain', 'utf-8'))
+
+        server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+        if self.use_tls:
+            server.starttls()
+        if self.smtp_username and self.smtp_password:
+            server.login(self.smtp_username, self.smtp_password)
+
+        text = msg.as_string()
+        server.sendmail(self.smtp_username, client_email, text)
+        server.quit()
+        """
+
+        # Эмуляция успешной отправки
+        return True, "Email sent successfully (emulated)"
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки email: {e}")
+        return False, str(e)
+
+
 class EmailService:
     def __init__(self):
         self.smtp_server = getattr(settings, "EMAIL_HOST", "smtp.gmail.com")
@@ -18,38 +51,6 @@ class EmailService:
         self.smtp_username = getattr(settings, "EMAIL_HOST_USER", "")
         self.smtp_password = getattr(settings, "EMAIL_HOST_PASSWORD", "")
         self.use_tls = getattr(settings, "EMAIL_USE_TLS", True)
-
-    def send_email(self, client_email, subject, body):
-        """Отправка email"""
-        try:
-            # Для тестирования - эмулируем отправку
-            logger.info(f"📧 Эмуляция отправки email на {client_email}")
-
-            # В реальном режиме раскомментируйте:
-            """
-            msg = MimeMultipart()
-            msg['From'] = self.smtp_username
-            msg['To'] = client_email
-            msg['Subject'] = subject
-            msg.attach(MimeText(body, 'plain', 'utf-8'))
-
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-            if self.use_tls:
-                server.starttls()
-            if self.smtp_username and self.smtp_password:
-                server.login(self.smtp_username, self.smtp_password)
-
-            text = msg.as_string()
-            server.sendmail(self.smtp_username, client_email, text)
-            server.quit()
-            """
-
-            # Эмуляция успешной отправки
-            return True, "Email sent successfully (emulated)"
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка отправки email: {e}")
-            return False, str(e)
 
 
 def send_mailing(mailing_id):
@@ -68,7 +69,7 @@ def send_mailing(mailing_id):
 
         for client in mailing.clients.all():
             try:
-                success, response = email_service.send_email(
+                success, response = send_email(
                     client.email, mailing.message.subject, mailing.message.body
                 )
 

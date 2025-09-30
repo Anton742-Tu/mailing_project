@@ -1,44 +1,93 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ message.subject }}{% endblock %}
+{% block title %}{{ message.subject }} - Сообщение{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">{{ message.subject }}</h4>
-                <span class="badge {% if message.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                    {% if message.is_active %}Активно{% else %}Неактивно{% endif %}
-                </span>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h6>Текст сообщения:</h6>
-                    <div class="border p-3 bg-light rounded">
+<div class="container-fluid">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'message_list' %}">Сообщения</a></li>
+            <li class="breadcrumb-item active">{{ message.subject|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+
+    <!-- Заголовок и действия -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-envelope"></i> {{ message.subject }}</h1>
+        <div class="btn-group">
+            <a href="{% url 'message_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <!-- Информация о сообщении -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-text"></i> Содержание сообщения
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="message-content">
                         {{ message.body|linebreaks }}
                     </div>
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <small class="text-muted">
-                            <strong>Создано:</strong> {{ message.created_at|date:"d.m.Y H:i" }}
-                        </small>
-                    </div>
-                    <div class="col-md-6">
-                        <small class="text-muted">
-                            <strong>Обновлено:</strong> {{ message.updated_at|date:"d.m.Y H:i" }}
-                        </small>
-                    </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Статус сообщения -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Статус</h6>
+                </div>
+                <div class="card-body">
+                    {% if message.is_active %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> Активно
+                        </span>
+                        <p class="mt-2 mb-0 text-muted">Это сообщение можно использовать в рассылках</p>
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-x-circle"></i> Неактивно
+                        </span>
+                        <p class="mt-2 mb-0 text-muted">Это сообщение нельзя использовать в рассылках</p>
+                    {% endif %}
                 </div>
             </div>
-            <div class="card-footer">
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'message_list' %}" class="btn btn-secondary">← Назад к списку</a>
-                    <div>
-                        <a href="{% url 'message_edit' message.pk %}" class="btn btn-primary">✏️ Редактировать</a>
-                        <a href="{% url 'message_delete' message.pk %}" class="btn btn-outline-danger">🗑️ Удалить</a>
+
+            <!-- Информация о владельце -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Информация</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Владелец:</strong> {{ message.owner.username }}</p>
+                    <p><strong>Создано:</strong> {{ message.created_at|date:"d.m.Y H:i" }}</p>
+                    {% if message.updated_at != message.created_at %}
+                        <p><strong>Обновлено:</strong> {{ message.updated_at|date:"d.m.Y H:i" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Действия</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'message_edit' message.pk %}" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Редактировать
+                        </a>
+                        <a href="{% url 'message_delete' message.pk %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Удалить
+                        </a>
                     </div>
                 </div>
             </div>
