@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
         # Обновляем статусы рассылок
         for mailing in Mailing.objects.all():
-            original_status = mailing.status
+            _ = mailing.status
 
             if mailing.status == "created" and mailing.start_time <= now:
                 mailing.status = "started"

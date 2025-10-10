@@ -1,7 +1,6 @@
 from functools import wraps
 
 from django.core.cache import cache
-from django.utils.decorators import method_decorator
 
 
 def cache_page(timeout=300):

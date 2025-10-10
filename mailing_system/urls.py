@@ -15,15 +15,29 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth import views as auth_views
+from django.core.cache import cache
+from django.shortcuts import redirect
 from django.urls import include, path
+
+
+# Функция для очистки кеша
+def clear_cache_test(request):
+    """Очистка кеша для тестирования"""
+    if request.user.is_authenticated:
+        cache_key = f"home_stats_{request.user.id}"
+        cache.delete(cache_key)
+        messages.success(request, "✅ Кеш очищен! Данные будут обновлены из базы.")
+    return redirect("home")
 
 urlpatterns = [
     # Админка
     path("admin/", admin.site.urls),
     # Приложение mailing
     path("", include("mailing.urls")),
+    # Очистка кеша
+    path("clear-cache/", clear_cache_test, name="clear_cache"),
     # Аутентификация
     path(
         "accounts/",

@@ -3,7 +3,7 @@ from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
 
-from .cache_utils import cache_model_method, get_cached_or_execute
+from .cache_utils import cache_model_method
 
 
 class Client(models.Model):
@@ -105,18 +105,6 @@ class Mailing(models.Model):
         return self.clients.count()
 
     get_clients_count.short_description = "Кол-во клиентов"
-
-    def get_success_count(self):
-        """Количество успешных отправок для этой рассылки"""
-        return self.mailinglog_set.filter(status="success").count()
-
-    def get_failed_count(self):
-        """Количество неуспешных отправок для этой рассылки"""
-        return self.mailinglog_set.filter(status="failed").count()
-
-    def get_total_attempts(self):
-        """Общее количество попыток отправки"""
-        return self.mailinglog_set.count()
 
     def get_success_rate(self):
         """Процент успешных отправок"""

@@ -1,4 +1,3 @@
-from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 
 from . import views
@@ -17,11 +16,6 @@ from .views import (
     client_edit,
     client_list,
     manager_dashboard,
-    message_create,
-    message_delete,
-    message_detail,
-    message_edit,
-    message_list,
     send_mailing_now,
     statistics_view,
     toggle_mailing_active,
@@ -42,11 +36,11 @@ urlpatterns = [
     path("clients/<int:pk>/edit/", client_edit, name="client_edit"),
     path("clients/<int:pk>/delete/", client_delete, name="client_delete"),
     # Сообщения
-    path('messages/', views.message_list, name='message_list'),
-    path('messages/create/', views.message_create, name='message_create'),
-    path('messages/<int:pk>/', views.message_detail, name='message_detail'),
-    path('messages/<int:pk>/edit/', views.message_edit, name='message_edit'),
-    path('messages/<int:pk>/delete/', views.message_delete, name='message_delete'),
+    path("messages/", views.message_list, name="message_list"),
+    path("messages/create/", views.message_create, name="message_create"),
+    path("messages/<int:pk>/", views.message_detail, name="message_detail"),
+    path("messages/<int:pk>/edit/", views.message_edit, name="message_edit"),
+    path("messages/<int:pk>/delete/", views.message_delete, name="message_delete"),
     # Рассылки
     path("mailings/", MailingListView.as_view(), name="mailing_list"),
     path("mailings/create/", MailingCreateView.as_view(), name="mailing_create"),

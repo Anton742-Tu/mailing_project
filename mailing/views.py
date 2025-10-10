@@ -1,4 +1,4 @@
-from datetime import timedelta
+import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,10 +10,8 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import models
 from django.db.models import Count, Q
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.generic import (
@@ -26,11 +24,7 @@ from django.views.generic import (
 )
 
 from .forms import ClientForm, MailingForm, MessageForm
-from .mixins import (
-    ManagerRequiredMixin,
-    OwnerOrManagerRequiredMixin,
-    OwnerRequiredMixin,
-)
+from .mixins import OwnerOrManagerRequiredMixin, OwnerRequiredMixin
 from .models import Client, Mailing, MailingLog, Message, get_user_statistics
 
 
@@ -103,45 +97,76 @@ def client_create(request):
 @login_required
 def client_edit(request, pk):
     """Редактирование клиента"""
-    client = get_object_or_404(Client, pk=pk, owner=request.user)
-
-    if request.method == "POST":
-        form = ClientForm(request.POST, instance=client)
-        if form.is_valid():
-            client = form.save()
-            messages.success(request, f'Клиент "{client.email}" успешно обновлен!')
-            return redirect("client_list")
+    try:
+        if request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер может редактировать всех клиентов
+            client = Client.objects.get(pk=pk)
         else:
-            messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
-    else:
-        form = ClientForm(instance=client)
+            # Пользователь редактирует только своих клиентов
+            client = Client.objects.get(pk=pk, owner=request.user)
 
-    return render(
-        request,
-        "mailing/client_form.html",
-        {"form": form, "title": "Редактировать клиента", "client": client},
-    )
+        if request.method == "POST":
+            form = ClientForm(request.POST, instance=client)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Клиент "{client.email}" успешно обновлен!')
+                return redirect("client_list")
+            else:
+                messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
+        else:
+            form = ClientForm(instance=client)
+
+        return render(
+            request,
+            "mailing/client_form.html",
+            {"form": form, "title": "Редактировать клиента", "client": client},
+        )
+
+    except Client.DoesNotExist:
+        messages.error(request, "Клиент не найден или у вас нет прав для редактирования.")
+        return redirect("client_list")
 
 
 @login_required
 def client_delete(request, pk):
     """Удаление клиента"""
-    client = get_object_or_404(Client, pk=pk, owner=request.user)
+    try:
+        if request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер может удалять всех клиентов
+            client = Client.objects.get(pk=pk)
+        else:
+            # Пользователь удаляет только своих клиентов
+            client = Client.objects.get(pk=pk, owner=request.user)
 
-    if request.method == "POST":
-        client_email = client.email
-        client.delete()
-        messages.success(request, f'Клиент "{client_email}" успешно удален!')
+        if request.method == "POST":
+            client_email = client.email
+            client.delete()
+            messages.success(request, f'Клиент "{client_email}" успешно удален!')
+            return redirect("client_list")
+
+        return render(request, "mailing/client_confirm_delete.html", {"client": client})
+
+    except Client.DoesNotExist:
+        messages.error(request, "Клиент не найден или у вас нет прав для удаления.")
         return redirect("client_list")
-
-    return render(request, "mailing/client_confirm_delete.html", {"client": client})
 
 
 @login_required
 def client_detail(request, pk):
     """Просмотр деталей клиента"""
-    client = get_object_or_404(Client, pk=pk, owner=request.user)
-    return render(request, "mailing/client_detail.html", {"client": client})
+    try:
+        if request.user.groups.filter(name="Менеджер").exists():
+            # Менеджер может видеть всех клиентов
+            client = Client.objects.get(pk=pk)
+        else:
+            # Пользователь видит только своих клиентов
+            client = Client.objects.get(pk=pk, owner=request.user)
+
+        return render(request, "mailing/client_detail.html", {"client": client})
+
+    except Client.DoesNotExist:
+        messages.error(request, "Клиент не найден или у вас нет доступа.")
+        return redirect("client_list")
 
 
 # Views для сообщений
@@ -298,6 +323,7 @@ def message_detail(request, pk):
         messages.error(request, "Сообщение не найдено или у вас нет доступа.")
         return redirect("message_list")
 
+
 # View для статистики
 # Кешируем статистику на 3 минуты
 def statistics_view(request):
@@ -382,26 +408,64 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # РАЗДЕЛЕНИЕ ПО РОЛЯМ
+        # Ключ для кеширования
+        cache_key = f"home_stats_{user.id}"
+
+        # Проверяем, не запрашивали ли принудительное обновление
+        force_refresh = self.request.GET.get("refresh") == "true"
+
+        start_time = time.time()
+        cache_hit = False
+
+        if force_refresh:
+            # Принудительное обновление - очищаем кеш
+            cache.delete(cache_key)
+            stats = self._calculate_stats(user)
+            cache.set(cache_key, stats, 300)  # 5 минут
+            load_source = "БАЗА (принудительно)"
+        else:
+            # Пробуем взять из кеша
+            stats = cache.get(cache_key)
+            if stats is not None:
+                cache_hit = True
+                load_source = "КЕШ"
+            else:
+                # Вычисляем данные
+                stats = self._calculate_stats(user)
+                cache.set(cache_key, stats, 300)  # 5 минут
+                load_source = "БАЗА"
+
+        end_time = time.time()
+        load_time = round((end_time - start_time) * 1000, 2)
+
+        context.update(stats)
+        context.update(
+            {
+                "cache_hit": cache_hit,
+                "load_source": load_source,
+                "load_time": load_time,
+                "cache_key": cache_key,
+            }
+        )
+
+        return context
+
+    def _calculate_stats(self, user):
+        """Вычисление статистики"""
         if user.groups.filter(name="Менеджер").exists():
-            # МЕНЕДЖЕР видит ВСЕ данные
-            stats = {
+            return {
                 "client_count": Client.objects.count(),
                 "message_count": Message.objects.count(),
                 "mailing_count": Mailing.objects.count(),
                 "active_mailing_count": Mailing.objects.filter(is_active=True).count(),
             }
         else:
-            # ОБЫЧНЫЙ ПОЛЬЗОВАТЕЛЬ видит только свои данные
-            stats = {
+            return {
                 "client_count": Client.objects.filter(owner=user).count(),
                 "message_count": Message.objects.filter(owner=user).count(),
                 "mailing_count": Mailing.objects.filter(owner=user).count(),
                 "active_mailing_count": Mailing.objects.filter(owner=user, is_active=True).count(),
             }
-
-        context.update(stats)
-        return context
 
 
 # View для рассылок

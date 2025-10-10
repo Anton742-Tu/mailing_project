@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Client, Mailing, MailingLog, Message
+from .models import Client, MailingLog, Message
 
 
 @admin.register(Client)

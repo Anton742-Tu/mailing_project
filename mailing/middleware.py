@@ -1,4 +1,3 @@
-from django.middleware.common import CommonMiddleware
 from django.utils.cache import patch_cache_control
 
 

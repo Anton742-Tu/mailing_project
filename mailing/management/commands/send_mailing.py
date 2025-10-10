@@ -23,7 +23,7 @@ class Command(BaseCommand):
         try:
             mailing = Mailing.objects.get(id=mailing_id)
 
-            self.stdout.write(f"📧 Информация о рассылке:")
+            self.stdout.write("📧 Информация о рассылке:")
             self.stdout.write(f"   ID: {mailing.id}")
             self.stdout.write(f"   Название: {mailing.title}")
             self.stdout.write(f"   Статус: {mailing.get_status_display()}")
@@ -48,10 +48,10 @@ class Command(BaseCommand):
             success, message = send_mailing(mailing_id)
 
             if success:
-                self.stdout.write(self.style.SUCCESS(f"✅ Рассылка успешно отправлена!"))
+                self.stdout.write(self.style.SUCCESS("✅ Рассылка успешно отправлена!"))
                 self.stdout.write(f"   Результат: {message}")
             else:
-                self.stdout.write(self.style.ERROR(f"❌ Ошибка отправки рассылки"))
+                self.stdout.write(self.style.ERROR("❌ Ошибка отправки рассылки"))
                 self.stdout.write(f"   Ошибка: {message}")
 
         except Mailing.DoesNotExist:

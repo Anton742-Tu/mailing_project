@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- Шапка для всех -->
     <div class="row">
         <div class="col-12">
             <div class="jumbotron bg-light p-5 rounded mb-4">
@@ -11,50 +12,42 @@
                 <p class="lead">Управляйте email рассылками эффективно и просто</p>
                 <hr class="my-4">
 
+                <!-- Быстрые действия для всех -->
                 <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h3 class="text-primary">{{ client_count }}</h3>
-                                <p class="card-text"><strong>Клиентов</strong></p>
-                                <a href="{% url 'client_list' %}" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-people"></i> Управление
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-person-plus display-4 text-primary"></i>
+                                <h5>Добавить клиента</h5>
+                                <p>Создайте нового клиента для рассылок</p>
+                                <a href="{% url 'client_create' %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Добавить
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h3 class="text-success">{{ message_count }}</h3>
-                                <p class="card-text"><strong>Шаблонов сообщений</strong></p>
-                                <a href="{% url 'message_list' %}" class="btn btn-outline-success btn-sm">
-                                    <i class="bi bi-envelope"></i> Управление
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-envelope-plus display-4 text-success"></i>
+                                <h5>Создать шаблон</h5>
+                                <p>Создайте новое сообщение для рассылок</p>
+                                <a href="{% url 'message_create' %}" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Создать
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h3 class="text-warning">{{ mailing_count }}</h3>
-                                <p class="card-text"><strong>Рассылок</strong></p>
-                                <a href="{% url 'mailing_list' %}" class="btn btn-outline-warning btn-sm">
-                                    <i class="bi bi-send"></i> Управление
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <h3 class="text-info">{{ active_mailing_count }}</h3>
-                                <p class="card-text"><strong>Активных рассылок</strong></p>
-                                <a href="{% url 'mailing_list' %}" class="btn btn-outline-info btn-sm">
-                                    <i class="bi bi-play-circle"></i> Просмотр
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-send-plus display-4 text-warning"></i>
+                                <h5>Новая рассылка</h5>
+                                <p>Запустите новую email рассылку</p>
+                                <a href="{% url 'mailing_create' %}" class="btn btn-warning">
+                                    <i class="bi bi-plus-circle"></i> Создать
                                 </a>
                             </div>
                         </div>
@@ -64,51 +57,66 @@
         </div>
     </div>
 
-    <!-- Быстрые действия -->
+    <!-- Статистика и управление для менеджеров и админов -->
+    {% if user.is_superuser or user.groups.all.0.name == 'Менеджер' %}
     <div class="row">
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-person-plus display-4 text-primary"></i>
-                    <h5>Добавить клиента</h5>
-                    <p>Создайте нового клиента для рассылок</p>
-                    <a href="{% url 'client_create' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Добавить
-                    </a>
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ client_count }}</h3>
+                            <p class="card-text"><strong>Клиентов</strong></p>
+                            <a href="{% url 'client_list' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-people"></i> Управление
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-envelope-plus display-4 text-success"></i>
-                    <h5>Создать шаблон</h5>
-                    <p>Создайте новое сообщение для рассылок</p>
-                    <a href="{% url 'message_create' %}" class="btn btn-success">
-                        <i class="bi bi-plus-circle"></i> Создать
-                    </a>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ message_count }}</h3>
+                            <p class="card-text"><strong>Шаблонов сообщений</strong></p>
+                            <a href="{% url 'message_list' %}" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-envelope"></i> Управление
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-send-plus display-4 text-warning"></i>
-                    <h5>Новая рассылка</h5>
-                    <p>Запустите новую email рассылку</p>
-                    <a href="{% url 'mailing_create' %}" class="btn btn-warning">
-                        <i class="bi bi-plus-circle"></i> Создать
-                    </a>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ mailing_count }}</h3>
+                            <p class="card-text"><strong>Рассылок</strong></p>
+                            <a href="{% url 'mailing_list' %}" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-send"></i> Управление
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ active_mailing_count }}</h3>
+                            <p class="card-text"><strong>Активных рассылок</strong></p>
+                            <a href="{% url 'mailing_list' %}" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-play-circle"></i> Просмотр
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Статистика -->
-    <div class="row mt-4">
-        <div class="col-12">
+    <!-- Статистика и Производительность системы -->
+    <div class="row mt-4 main-content">
+        <!-- Последние активности -->
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
                     <h5><i class="bi bi-clock-history"></i> Последние активности</h5>
@@ -149,6 +157,90 @@
                 </div>
             </div>
         </div>
+
+        <!-- Производительность системы -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-2">
+                        <i class="bi bi-speedometer2"></i> Производительность системы
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if cache_hit %}
+                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-repeat text-warning" style="font-size: 2rem;"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Источник данных:</h6>
+                                    <p class="mb-0">
+                                        {% if cache_hit %}
+                                            <span class="badge bg-success">КЕШ</span>
+                                            <small class="text-muted">Данные загружены из кеша</small>
+                                        {% else %}
+                                            <span class="badge bg-warning">БАЗА ДАННЫХ</span>
+                                            <small class="text-muted">Данные загружены из базы</small>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi bi-clock text-primary" style="font-size: 2rem;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Время загрузки:</h6>
+                                    <p class="mb-0">
+                                        <span class="fw-bold {% if load_time < 50 %}text-success{% elif load_time < 100 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ load_time }} мс
+                                        </span>
+                                        <small class="text-muted">для рендеринга страницы</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Дополнительная информация для разработки -->
+                    <details class="mt-3">
+                        <summary class="text-muted small">Техническая информация</summary>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>Ключ кеша:</strong> {{ cache_key }}<br>
+                                <strong>Статус:</strong>
+                                {% if cache_hit %}
+                                    <span class="text-success">Попадание в кеш</span>
+                                {% else %}
+                                    <span class="text-warning">Промах кеша (данные сохранены)</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                    </details>
+
+                    <!-- Кнопка очистки кеша -->
+                    <div class="text-center mt-3">
+                        <a href="{% url 'clear_cache' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-repeat"></i> Очистить кеш и перезагрузить
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    {% else %}
+    <!-- Сообщение для обычных пользователей -->
+    <div class="alert alert-info text-center">
+        <h5><i class="bi bi-info-circle"></i> Панель управления</h5>
+        <p class="mb-0">Для доступа к статистике и управлению системой обратитесь к менеджеру</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

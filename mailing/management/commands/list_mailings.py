@@ -29,7 +29,7 @@ class Command(BaseCommand):
             mailings = mailings.filter(status=status_filter)
             self.stdout.write(f"📋 Рассылки со статусом '{status_filter}':")
         elif active_only:
-            now = timezone.now()
+            _ = timezone.now()
             mailings = [m for m in mailings if m.is_active_now]
             self.stdout.write("📋 Активные рассылки (сейчас):")
         else:

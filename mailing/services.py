@@ -1,7 +1,4 @@
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 from django.conf import settings
 from django.utils import timezone
@@ -57,7 +54,7 @@ def send_mailing(mailing_id):
     """Отправка рассылки по ID"""
     try:
         mailing = Mailing.objects.get(id=mailing_id)
-        email_service = EmailService()
+        _ = EmailService()
 
         # Обновляем статус на "Запущена" при первой отправке
         if mailing.status == "created":
@@ -69,9 +66,7 @@ def send_mailing(mailing_id):
 
         for client in mailing.clients.all():
             try:
-                success, response = send_email(
-                    client.email, mailing.message.subject, mailing.message.body
-                )
+                success, response = send_email(client.email, mailing.message.subject, mailing.message.body)
 
                 # Логирование
                 MailingLog.objects.create(
