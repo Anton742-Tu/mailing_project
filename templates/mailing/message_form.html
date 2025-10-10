@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title|default:"Форма сообщения" }} - Система рассылок{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/messages.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-envelope"></i> {{ title|default:"Создать сообщение" }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" onsubmit="return validateMessageForm()">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Пожалуйста, исправьте ошибки в форме.
+                    </div>
+                    {% endif %}
+
+                    <!-- Поле темы -->
+                    <div class="mb-3">
+                        <label for="{{ form.subject.id_for_label }}" class="form-label">
+                            {{ form.subject.label }}
+                        </label>
+                        {{ form.subject }}
+                        {% if form.subject.help_text %}
+                        <small class="form-text text-muted">{{ form.subject.help_text }}</small>
+                        {% endif %}
+                        {% if form.subject.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.subject.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Поле тела сообщения -->
+                    <div class="mb-3">
+                        <label for="{{ form.body.id_for_label }}" class="form-label">
+                            {{ form.body.label }}
+                        </label>
+                        {{ form.body }}
+                        {% if form.body.help_text %}
+                        <small class="form-text text-muted">{{ form.body.help_text }}</small>
+                        {% endif %}
+                        {% if form.body.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.body.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Переключатель активности -->
+                    <div class="mb-3 form-check form-switch">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            {{ form.is_active.label }}
+                        </label>
+                        {% if form.is_active.help_text %}
+                        <small class="form-text text-muted d-block">{{ form.is_active.help_text }}</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Предпросмотр -->
+                    <div id="message-preview"></div>
+
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'message_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Сохранить сообщение
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/messages.js"></script>
+{% endblock %}

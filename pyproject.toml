@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "mailing-project"
+version = "0.1.0"
+description = ""
+authors = ["Anton Tumashov <Tumashovster@Gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+poetry-core = "^2.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+lint = [
+    "black (>=25.9.0,<26.0.0)",
+    "flake8 (>=7.3.0,<8.0.0)"
+]
+
+[tool.black]
+line-length = 119
+target-version = ['py312']

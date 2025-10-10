@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Рассылки - Система рассылок{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/mailings.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-send"></i> Рассылки</h1>
+    <a href="{% url 'mailing_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Создать рассылку
+    </a>
+</div>
+
+<div class="row">
+    {% for mailing in mailings %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 mailing-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0 mailing-title">{{ mailing.title }}</h5>
+                <span class="badge bg-{% if mailing.status == 'completed' %}success{% elif mailing.status == 'started' %}warning{% else %}info{% endif %}">
+                    {{ mailing.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="card-text"><strong>Сообщение:</strong> {{ mailing.message.subject }}</p>
+                <div class="mailing-stats">
+                    <span><i class="bi bi-people"></i> Клиентов: {{ mailing.clients.count }}</span>
+                    <span class="mailing-period"><i class="bi bi-clock"></i> {{ mailing.get_period_display }}</span>
+                </div>
+                <div class="mailing-time">
+                    <small><i class="bi bi-play-circle"></i> Начало: {{ mailing.start_time|date:"d.m.Y H:i" }}</small><br>
+                    <small><i class="bi bi-stop-circle"></i> Окончание: {{ mailing.end_time|date:"d.m.Y H:i" }}</small>
+                </div>
+
+                {% if mailing.is_active_now %}
+                <span class="badge bg-success mt-2">Активна сейчас</span>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="btn-group w-100">
+                    <a href="{% url 'mailing_detail' mailing.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Детали
+                    </a>
+                    <a href="{% url 'mailing_update' mailing.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i> Изменить
+                    </a>
+                    <a href="{% url 'mailing_delete' mailing.pk %}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i> Удалить
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> Рассылки не найдены.
+            <a href="{% url 'mailing_create' %}" class="alert-link">Создайте первую рассылку</a>.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/mailings.js"></script>
+{% endblock %}
