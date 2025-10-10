@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.contrib import admin, messages
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.views import LogoutView
 from django.core.cache import cache
 from django.shortcuts import redirect
 from django.urls import include, path
@@ -30,6 +31,7 @@ def clear_cache_test(request):
         cache.delete(cache_key)
         messages.success(request, "✅ Кеш очищен! Данные будут обновлены из базы.")
     return redirect("home")
+
 
 urlpatterns = [
     # Админка
@@ -48,11 +50,7 @@ urlpatterns = [
                     auth_views.LoginView.as_view(template_name="registration/login.html"),
                     name="login",
                 ),
-                path(
-                    "logout/",
-                    auth_views.LogoutView.as_view(template_name="registration/logout.html"),
-                    name="logout",
-                ),
+                path("logout/", LogoutView.as_view(next_page="login"), name="logout"),
                 path(
                     "password_reset/",
                     auth_views.PasswordResetView.as_view(template_name="registration/password_reset_form.html"),
